@@ -58,10 +58,47 @@ h1 {
   background: Canvas;
 }
 
-.cell.player-1 {
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.disc {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 30%);
+}
+
+.disc[hidden] {
+  display: none;
+}
+
+.new-game {
+  padding: 0.4rem 1rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Disc colours for the board and the status line; names are in src/ui/players.ts. */
+.cell.player-1,
+.disc.player-1 {
   background: #e53935;
 }
 
-.cell.player-2 {
+.cell.player-2,
+.disc.player-2 {
   background: #fdd835;
 }

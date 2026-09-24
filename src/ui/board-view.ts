@@ -1,5 +1,6 @@
 import { COLUMNS, ROWS, getCell } from '../game/board';
 import { canPlay, type GameState } from '../game/game';
+import { playerClass } from './players';
 
 export interface BoardView {
   /** Shows `state`: its discs, and which columns can be clicked. */
@@ -50,7 +51,7 @@ export function createBoardView(
       cells.forEach((columnCells, column) => {
         columnCells.forEach((cell, row) => {
           const player = getCell(state.board, column, row);
-          cell.className = player === 0 ? 'cell' : `cell player-${player}`;
+          cell.className = player === 0 ? 'cell' : `cell ${playerClass(player)}`;
         });
       });
     },
