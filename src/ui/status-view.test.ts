@@ -62,6 +62,19 @@ describe('createStatusView', () => {
     expect(container.querySelector('.status')?.getAttribute('aria-live')).toBe('polite');
   });
 
+  it('shows a notice instead of the game status and disables New game', () => {
+    const view = createStatusView(container, () => {});
+    view.render(play('3'), TWO_HUMANS, 'Waiting for opponent…');
+    expect(statusText()).toBe('Waiting for opponent…');
+    expect(disc()?.hidden).toBe(true);
+    expect(container.querySelector<HTMLButtonElement>('button.new-game')?.disabled).toBe(true);
+
+    view.render(play('3'), TWO_HUMANS);
+    expect(statusText()).toBe("Yellow's turn");
+    expect(disc()?.hidden).toBe(false);
+    expect(container.querySelector<HTMLButtonElement>('button.new-game')?.disabled).toBe(false);
+  });
+
   it('reports clicks on the New game button', () => {
     const onNewGame = vi.fn();
     createStatusView(container, onNewGame).render(play('0011223'), TWO_HUMANS);

@@ -1,4 +1,4 @@
-export type Mode = 'two-players' | 'computer';
+export type Mode = 'two-players' | 'computer' | 'online';
 
 /** Who moves first in computer mode; the starter plays red. */
 export type Starter = 'human' | 'computer';
@@ -14,6 +14,7 @@ export const DEFAULT_MODE_SETTINGS: ModeSettings = { mode: 'two-players', starte
 const MODE_OPTIONS: readonly (readonly [Mode, string])[] = [
   ['two-players', 'Two players'],
   ['computer', 'Against the computer'],
+  ['online', 'Play online'],
 ];
 
 const STARTER_OPTIONS: readonly (readonly [Starter, string])[] = [

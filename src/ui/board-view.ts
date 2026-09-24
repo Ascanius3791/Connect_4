@@ -3,8 +3,11 @@ import { canPlay, type GameState } from '../game/game';
 import { playerClass } from './players';
 
 export interface BoardView {
-  /** Shows `state`: its discs, and which columns can be clicked. */
-  render(state: GameState): void;
+  /**
+   * Shows `state`: its discs, and which columns can be clicked. With
+   * `interactive` false, no column can be clicked.
+   */
+  render(state: GameState, interactive?: boolean): void;
 }
 
 /**
@@ -44,9 +47,9 @@ export function createBoardView(
   container.replaceChildren(board);
 
   return {
-    render(state) {
+    render(state, interactive = true) {
       buttons.forEach((button, column) => {
-        button.disabled = !canPlay(state, column);
+        button.disabled = !interactive || !canPlay(state, column);
       });
       cells.forEach((columnCells, column) => {
         columnCells.forEach((cell, row) => {

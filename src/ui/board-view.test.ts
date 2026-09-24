@@ -66,4 +66,13 @@ describe('createBoardView', () => {
     createBoardView(container, () => {}).render(play('0011223'));
     expect(columns().every((c) => c.disabled)).toBe(true);
   });
+
+  it('disables every column when not interactive, but still shows the discs', () => {
+    const view = createBoardView(container, () => {});
+    view.render(play('3'), false);
+    expect(columns().every((c) => c.disabled)).toBe(true);
+    expect(container.querySelectorAll('.player-1')).toHaveLength(1);
+    view.render(play('3'), true);
+    expect(columns().every((c) => c.disabled)).toBe(false);
+  });
 });

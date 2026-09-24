@@ -7,9 +7,11 @@ export interface StatusView {
   /**
    * Shows whose turn it is in `state`, or how its game ended. When a human
    * plays the computer, the texts speak to the human ("Your turn",
-   * "You win!"); otherwise they name the colours.
+   * "You win!"); otherwise they name the colours. A `notice` (e.g. the
+   * state of an online connection) replaces the game's status and disables
+   * "New game" while it is shown.
    */
-  render(state: GameState, seats: Seats): void;
+  render(state: GameState, seats: Seats, notice?: string): void;
 }
 
 /**
@@ -35,11 +37,13 @@ export function createStatusView(container: HTMLElement, onNewGame: () => void):
   container.replaceChildren(line, button);
 
   return {
-    render(state, seats) {
-      const { player, message } = describe(state, seats);
+    render(state, seats, notice) {
+      const { player, message } =
+        notice === undefined ? describe(state, seats) : { player: undefined, message: notice };
       disc.className = player ? `disc ${playerClass(player)}` : 'disc';
       disc.hidden = !player;
       text.textContent = message;
+      button.disabled = notice !== undefined;
     },
   };
 }

@@ -31,6 +31,12 @@ export interface GameController {
    * seats, the new game uses them; otherwise it keeps the current ones.
    */
   newGame(seats?: Seats): void;
+  /**
+   * Shows `notice` in the status line instead of the game's status, and
+   * ignores column clicks and disables "New game" until it is cleared with
+   * `undefined`. Survives new games.
+   */
+  setNotice(notice: string | undefined): void;
 }
 
 /**
@@ -45,11 +51,12 @@ export function createGameController(
   const { botDelayMs = DEFAULT_BOT_DELAY_MS, random = Math.random } = options;
   let seats = options.seats;
   let state = newGame();
+  let notice: string | undefined;
   let pendingBotMove: ReturnType<typeof setTimeout> | undefined;
 
   const statusView = createStatusView(containers.status, () => restart());
   const boardView = createBoardView(containers.board, (column) => {
-    if (acceptsClicks(seats[state.currentPlayer])) play(column);
+    if (notice === undefined && acceptsClicks(seats[state.currentPlayer])) play(column);
   });
   show(state);
 
@@ -67,8 +74,7 @@ export function createGameController(
 
   function show(next: GameState): void {
     state = next;
-    statusView.render(state, seats);
-    boardView.render(state);
+    render();
     if (state.status.kind === 'playing' && seats[state.currentPlayer] === 'bot') {
       pendingBotMove = setTimeout(() => {
         pendingBotMove = undefined;
@@ -77,11 +83,20 @@ export function createGameController(
     }
   }
 
+  function render(): void {
+    statusView.render(state, seats, notice);
+    boardView.render(state, notice === undefined);
+  }
+
   return {
     get state() {
       return state;
     },
     newGame: restart,
+    setNotice(next) {
+      notice = next;
+      render();
+    },
   };
 }
 

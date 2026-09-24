@@ -178,6 +178,33 @@ describe('createGameController', () => {
     expect(controller.state.history).toEqual([3, 4]);
   });
 
+  it('shows a notice and ignores clicks and New game until it is cleared', () => {
+    const controller = start(HUMAN_VS_HUMAN);
+    clickColumn(3);
+    controller.setNotice('Connected');
+    expect(statusText()).toBe('Connected');
+    expect(board.querySelectorAll<HTMLButtonElement>('.column:enabled')).toHaveLength(0);
+    clickColumn(4);
+    clickNewGame();
+    expect(controller.state.history).toEqual([3]);
+
+    controller.newGame();
+    expect(statusText()).toBe('Connected');
+
+    controller.setNotice(undefined);
+    expect(statusText()).toBe("Red's turn");
+    clickColumn(4);
+    expect(controller.state.history).toEqual([4]);
+  });
+
+  it('does not schedule another bot move when the notice changes', () => {
+    const controller = start(BOT_VS_HUMAN);
+    controller.setNotice('Hello');
+    controller.setNotice(undefined);
+    vi.runAllTimers();
+    expect(controller.state.history).toEqual([0]);
+  });
+
   it('cancels a pending bot move when the seats change', () => {
     const controller = start(HUMAN_VS_BOT);
     clickColumn(3);
