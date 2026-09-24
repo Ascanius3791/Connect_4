@@ -56,6 +56,28 @@ export class SearchBoard {
     return this.count;
   }
 
+  /**
+   * The discs of the player to move and of the opponent as raw bits, in
+   * the two halves of the layout described above (see `cellBits`). For
+   * fast read-only scans such as the evaluation; do not rely on them
+   * outside `src/bot/`.
+   */
+  get ownLow(): number {
+    return this.currentLow;
+  }
+
+  get ownHigh(): number {
+    return this.currentHigh;
+  }
+
+  get opponentLow(): number {
+    return this.currentLow ^ this.maskLow;
+  }
+
+  get opponentHigh(): number {
+    return this.currentHigh ^ this.maskHigh;
+  }
+
   /** Red (1) moves first, so the parity of the move count decides. */
   get currentPlayer(): Player {
     return (this.count & 1) === 0 ? 1 : 2;
@@ -143,6 +165,21 @@ export class SearchBoard {
     const mover = this.currentPlayer;
     return own ? mover : mover === 1 ? 2 : 1;
   }
+}
+
+/**
+ * A cell as a (low, high) pair of bit masks in the layout above; exactly one
+ * of the two is non-zero. Lets other bot code build masks for sets of cells.
+ */
+export function cellBits(column: number, row: number): readonly [low: number, high: number] {
+  if (!Number.isInteger(column) || column < 0 || column >= COLUMNS) {
+    throw new RangeError(`Column ${column} is out of range 0-${COLUMNS - 1}`);
+  }
+  if (!Number.isInteger(row) || row < 0 || row >= ROWS) {
+    throw new RangeError(`Row ${row} is out of range 0-${ROWS - 1}`);
+  }
+  const bit = 1 << bitIndex(column, row);
+  return column < LOW_COLUMNS ? [bit, 0] : [0, bit];
 }
 
 /** Bit of a cell within its half (low: columns 0-3, high: columns 4-6). */
