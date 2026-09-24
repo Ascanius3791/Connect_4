@@ -1,6 +1,6 @@
 # Project status
 
-_Last updated: 2026-09-24, #27 (player cards showing your colour and whose turn it is)._
+_Last updated: 2026-09-24, #38 (a solver that tells who wins with perfect play)._
 
 ## Can I play yet?
 
@@ -35,6 +35,7 @@ Changing the mode, who starts or the level begins a new game right away. "New ga
 | 4. Online play | Done                     |
 | 5. GUI polish  | In progress              |
 | 6. Bot levels  | Reviewed, play-test next |
+| 7. Perfect bot | In progress              |
 
 ## What works
 
@@ -50,14 +51,15 @@ Changing the mode, who starts or the level begins a new game right away. "New ga
 - Behind the scenes: a fast internal board that can try out about 16 million positions per second, a score for how good a position looks (counting the lines of four each player can still complete, plus discs in the centre column), and a search that looks ahead as many moves as its time allows (from the start of a game, 8 moves take about 6 milliseconds, 12 moves about 0.14 seconds), finds forced wins and says what it could prove (for example "Red wins in 2 moves" or a draw). The computer opponent uses it since #34 (Medium, Hard and Expert since #35).
 - A designed look that follows your system's light or dark setting: segmented buttons for the mode, who starts and the level, one button style, a panel for the online link, a spinner while connecting and red error boxes when something goes wrong, a shaded board with rounded corners, and a Connect 4 icon in the browser tab. The whole page fits a laptop or desktop window without scrolling, with a card for each player beside the board.
 - Player cards that show at a glance which colour is yours (frame and "Your colour" badge, against the computer and online) and whose turn it is (raised card, glowing disc, "To move" or "Thinking…"). After an online rematch the mark moves to the colour you now play.
+- Behind the scenes for the coming Perfect level: a solver that works out whether the player to move wins, draws or loses with perfect play. It gets all 6,000 test positions of a well-known benchmark right; from the middle of the game on it answers within a fraction of a second, but early positions can take many seconds, so the first moves will come from a precomputed opening book (results in docs/solver.md).
 - An "Analysis" button that shows the best move on the board and what the search proves about the position, in its own background worker so it never slows the computer's moves.
 
 ## Next up
 
-Your play-test of milestone 6 (bot levels) on the website; problems you find become bug issues.
+Milestone 7 (Perfect bot), worked before the rest of milestone 5:
 
-Then the rest of milestone 5 (GUI polish):
+1. #39 An opening book, so the solver answers instantly in the first moves
+2. #40 The Perfect level, which never gives away a won or drawn game
+3. #41 An exact analysis ("Red wins with best play")
 
-1. #28 Falling discs and a preview of your move
-2. #29 Winning line highlight and a game-over screen
-3. #30 Remember the chosen mode across reloads
+Then your play-test of milestone 6 (bot levels) and the rest of milestone 5 (GUI polish): #28 falling discs and a move preview, #29 winning line and game-over screen, #30 remembering the chosen mode.

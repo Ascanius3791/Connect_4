@@ -55,6 +55,7 @@ Every issue belongs to one milestone. Milestones are worked on roughly in order:
 4. Online play
 5. GUI polish
 6. Bot levels
+7. Perfect bot
 
 A milestone ends with a review once all its issues are closed: a code review of what the milestone added, fixes for the findings worth fixing (as issues in the same milestone), and a play-test on the deployed site. Then the milestone is closed.
 

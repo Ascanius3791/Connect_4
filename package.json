@@ -17,7 +17,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm test",
-    "bot-match": "tsx scripts/bot-match.ts"
+    "bot-match": "tsx scripts/bot-match.ts",
+    "solver-bench": "tsx scripts/solver-bench.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
