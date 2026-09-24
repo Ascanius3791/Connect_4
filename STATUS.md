@@ -1,6 +1,6 @@
 # Project status
 
-_Last updated: 2026-09-24, after issue #10._
+_Last updated: 2026-09-24, after issue #14._
 
 ## Can I play yet?
 
@@ -12,7 +12,7 @@ _Last updated: 2026-09-24, after issue #10._
 | -------------- | ------- |
 | 1. Setup       | Done    |
 | 2. Local game  | Done    |
-| 3. Random bot  | Planned |
+| 3. Random bot  | Started |
 | 4. Online play | Planned |
 | 5. GUI polish  | Planned |
 | 6. Bot levels  | Planned |
@@ -23,9 +23,9 @@ _Last updated: 2026-09-24, after issue #10._
 - A complete local game for two players: 7 × 6 board, red and yellow discs, click a column to play.
 - A status line shows whose turn it is and the result; screen readers announce it.
 - "New game" restarts at any point, during or after a game.
+- The computer opponent can pick a random legal move; it cannot be played against yet.
 
 ## Next up
 
-1. #14 Pick a random legal move for the bot
-2. #15 Let the computer take its turns automatically
-3. #16 Choose between two players and playing against the computer
+1. #15 Let the computer take its turns automatically
+2. #16 Choose between two players and playing against the computer
