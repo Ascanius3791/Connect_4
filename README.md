@@ -1,0 +1,20 @@
+# Connect 4
+
+A browser-based Connect 4 game. Play against a friend on the same PC, against a bot, or live against a friend on another PC by sending them a link.
+
+## Planned features
+
+Development is tracked with [GitHub issues](https://github.com/Ascanius3791/Connect_4/issues), grouped into [milestones](https://github.com/Ascanius3791/Connect_4/milestones):
+
+1. **Setup** – project scaffold, tooling, CI and automatic deployment to GitHub Pages
+2. **Local game** – two players on the same PC can play a full game in the browser
+3. **Random bot** – play against a computer opponent that makes random legal moves
+4. **Online play** – two players on different PCs play live via a shareable link
+5. **GUI polish** – animations, visual design and game-over screens
+6. **Bot levels** – selectable bot difficulty levels
+
+Mobile devices are out of scope for now.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the issue format, labels and the definition of done.
