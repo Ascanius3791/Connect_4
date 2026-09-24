@@ -4,6 +4,10 @@
 
 A browser-based Connect 4 game. Play against a friend on the same PC, against a bot, or live against a friend on another PC by sending them a link.
 
+**Play it here: https://ascanius3791.github.io/Connect_4/**
+
+Every push to `main` that passes all checks is deployed there automatically.
+
 ## Planned features
 
 Development is tracked with [GitHub issues](https://github.com/Ascanius3791/Connect_4/issues), grouped into [milestones](https://github.com/Ascanius3791/Connect_4/milestones):
