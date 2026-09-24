@@ -49,7 +49,7 @@ const controller = createGameController(
     onHumanMove: (index, column) => session?.sendMove(index, column),
   },
 );
-const onlineView = createOnlineView(onlineContainer);
+const onlineView = createOnlineView(onlineContainer, () => session?.rematch());
 
 /** Shows the online setup in the link box and status line; `undefined` when offline. */
 function showOnlineStatus(status: OnlineStatus | undefined): void {

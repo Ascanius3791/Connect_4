@@ -5,7 +5,7 @@ import { COLUMNS } from '../game/board';
  * an opponent running the previous deployment, so both sides can tell the
  * players to reload instead of failing in odd ways.
  */
-export const PROTOCOL_VERSION = 2;
+export const PROTOCOL_VERSION = 3;
 
 /** First message each side sends after connecting. */
 export type HelloMessage = { readonly type: 'hello'; readonly version: number };
@@ -23,7 +23,10 @@ export type MoveMessage = {
 export type RematchRequestMessage = { readonly type: 'rematch-request' };
 export type RematchAcceptMessage = { readonly type: 'rematch-accept' };
 
-/** Keep-alive, so a silent connection can be told apart from a lost one. */
+/**
+ * Keep-alive, so a silent connection can be told apart from a lost one. Each
+ * side sends it every few seconds from protocol version 3 on.
+ */
 export type PingMessage = { readonly type: 'ping' };
 
 /**

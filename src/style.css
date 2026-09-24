@@ -82,7 +82,16 @@ h1 {
   margin-bottom: 1rem;
 }
 
-.online-link[hidden] {
+.online-rematch {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.online-link[hidden],
+.online-rematch[hidden] {
   display: none;
 }
 
@@ -99,7 +108,8 @@ h1 {
   font: inherit;
 }
 
-.copy-link {
+.copy-link,
+.rematch {
   padding: 0.4rem 1rem;
   font: inherit;
   cursor: pointer;

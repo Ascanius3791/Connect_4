@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { newGame, playMove, type GameState } from '../game/game';
 import { createChannelPair, type Channel, type JsonValue } from '../net/channel';
 import { PROTOCOL_VERSION } from '../net/protocol';
-import { onlineStatusText } from '../ui/online-view';
+import { createOnlineView, onlineStatusText } from '../ui/online-view';
 import { createGameController } from './controller';
 import {
   buildJoinLink,
@@ -20,8 +20,21 @@ import {
 
 const PAGES_URL = 'https://ascanius3791.github.io/Connect_4/';
 
+// Fake timers drive the keep-alive and timeouts; channel deliveries still run
+// as real microtasks.
+beforeEach(() => {
+  vi.useFakeTimers();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 /** Waits until all queued deliveries have happened. */
-const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+const settle = () => vi.advanceTimersByTimeAsync(0);
+
+/** Lets `ms` pass, delivering messages sent in between. */
+const wait = (ms: number) => vi.advanceTimersByTimeAsync(ms);
 
 describe('buildJoinLink', () => {
   it('appends the ID as a fragment to the Pages base path', () => {
@@ -201,10 +214,11 @@ function fakeConnector() {
 
 /**
  * One player's page, wired like `main.ts`: a game controller whose clicked
- * moves go to the online session, and a status line that shows the session's
- * status as a notice.
+ * moves go to the online session, a status line that shows the session's
+ * status as a notice, and the online view with its rematch button.
  */
 function page() {
+  const online = document.createElement('div');
   const status = document.createElement('div');
   const board = document.createElement('div');
   let session: OnlineSession | undefined;
@@ -213,11 +227,14 @@ function page() {
     { status, board },
     { seats: { 1: 'human', 2: 'human' }, onHumanMove: (i, c) => session?.sendMove(i, c) },
   );
+  const onlineView = createOnlineView(online, () => session?.rematch());
+  const rematchButton = () => online.querySelector<HTMLButtonElement>('button.rematch');
   return {
     controller,
     statuses,
     onStatus(next: OnlineStatus) {
       statuses.push(next);
+      onlineView.render(next);
       controller.setNotice(onlineStatusText(next));
     },
     attach(next: OnlineSession) {
@@ -225,6 +242,20 @@ function page() {
     },
     click(column: number) {
       board.querySelectorAll<HTMLButtonElement>('.column')[column]?.click();
+    },
+    clickRematch() {
+      rematchButton()?.click();
+    },
+    /** The rematch box's text and button, or `undefined` while it is hidden. */
+    rematch() {
+      const box = online.querySelector<HTMLElement>('.online-rematch');
+      if (!box || box.hidden) return undefined;
+      const button = rematchButton();
+      return {
+        text: box.querySelector('span')?.textContent,
+        button: button?.textContent,
+        enabled: !button?.disabled,
+      };
     },
     statusText: () => status.querySelector('.status')?.textContent,
     newGameEnabled: () => !status.querySelector<HTMLButtonElement>('.new-game')?.disabled,
@@ -237,13 +268,13 @@ describe('hostOnlineGame and joinOnlineGame', () => {
     const host = page();
     const guest = page();
 
-    hostOnlineGame(PAGES_URL, host.controller, host.onStatus, fake.connector);
+    hostOnlineGame(PAGES_URL, host.controller, host.onStatus, { connector: fake.connector });
     expect(host.statuses).toEqual([{ kind: 'creating' }]);
     fake.register('abc');
     await settle();
     expect(host.statuses.at(-1)).toEqual({ kind: 'waiting', link: `${PAGES_URL}#join=abc` });
 
-    joinOnlineGame('abc', guest.controller, guest.onStatus, fake.connector);
+    joinOnlineGame('abc', guest.controller, guest.onStatus, { connector: fake.connector });
     expect(fake.joined).toEqual(['abc']);
     expect(guest.statuses).toEqual([{ kind: 'connecting' }]);
 
@@ -256,7 +287,7 @@ describe('hostOnlineGame and joinOnlineGame', () => {
   it('reports a version mismatch on both sides', async () => {
     const fake = fakeConnector();
     const host = page();
-    hostOnlineGame(PAGES_URL, host.controller, host.onStatus, fake.connector);
+    hostOnlineGame(PAGES_URL, host.controller, host.onStatus, { connector: fake.connector });
     fake.register('abc');
     await settle();
 
@@ -272,19 +303,22 @@ describe('hostOnlineGame and joinOnlineGame', () => {
     const fake = fakeConnector();
     const host = page();
     const guest = page();
-    hostOnlineGame(PAGES_URL, host.controller, host.onStatus, fake.connector);
-    joinOnlineGame('abc', guest.controller, guest.onStatus, fake.connector);
+    hostOnlineGame(PAGES_URL, host.controller, host.onStatus, { connector: fake.connector });
+    joinOnlineGame('abc', guest.controller, guest.onStatus, { connector: fake.connector });
     fake.failHost(new Error('No broker'));
     fake.failJoin(new Error('No game found'));
     await settle();
     expect(host.statuses.at(-1)).toEqual({ kind: 'failed', message: 'No broker' });
-    expect(guest.statuses.at(-1)).toEqual({ kind: 'failed', message: 'No game found' });
+    expect(guest.statuses.at(-1)).toEqual({ kind: 'join-failed' });
+    expect(guest.statusText()).toBe('Could not join this game. Ask for a new link.');
   });
 
   it('stops waiting for a guest when closed', async () => {
     const fake = fakeConnector();
     const host = page();
-    const session = hostOnlineGame(PAGES_URL, host.controller, host.onStatus, fake.connector);
+    const session = hostOnlineGame(PAGES_URL, host.controller, host.onStatus, {
+      connector: fake.connector,
+    });
     fake.register('abc');
     await settle();
     session.close();
@@ -299,7 +333,9 @@ describe('hostOnlineGame and joinOnlineGame', () => {
   it('cancels hosting that finishes after closing', async () => {
     const fake = fakeConnector();
     const host = page();
-    hostOnlineGame(PAGES_URL, host.controller, host.onStatus, fake.connector).close();
+    hostOnlineGame(PAGES_URL, host.controller, host.onStatus, {
+      connector: fake.connector,
+    }).close();
     fake.register('abc');
     await settle();
     expect(fake.cancel).toHaveBeenCalledOnce();
@@ -310,10 +346,12 @@ describe('hostOnlineGame and joinOnlineGame', () => {
     const fake = fakeConnector();
     const host = page();
     const guest = page();
-    const hostSession = hostOnlineGame(PAGES_URL, host.controller, host.onStatus, fake.connector);
+    const hostSession = hostOnlineGame(PAGES_URL, host.controller, host.onStatus, {
+      connector: fake.connector,
+    });
     fake.register('abc');
     await settle();
-    joinOnlineGame('abc', guest.controller, guest.onStatus, fake.connector);
+    joinOnlineGame('abc', guest.controller, guest.onStatus, { connector: fake.connector });
     const [hostEnd, guestEnd] = fake.connect();
     await settle();
 
@@ -321,12 +359,16 @@ describe('hostOnlineGame and joinOnlineGame', () => {
     await settle();
     expect(hostEnd.isOpen).toBe(false);
     expect(guestEnd.isOpen).toBe(false);
+    expect(host.statuses.at(-1)).toEqual({ kind: 'connected' });
+    expect(guest.statuses.at(-1)).toEqual({ kind: 'connection-lost' });
+    // No ping or timeout is left running on either side.
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it('closes a channel that opens after the guest closed', async () => {
     const fake = fakeConnector();
     const guest = page();
-    joinOnlineGame('abc', guest.controller, guest.onStatus, fake.connector).close();
+    joinOnlineGame('abc', guest.controller, guest.onStatus, { connector: fake.connector }).close();
     const [, guestEnd] = fake.connect();
     await settle();
     expect(guestEnd.isOpen).toBe(false);
@@ -339,21 +381,24 @@ async function connectPages() {
   const fake = fakeConnector();
   const host = page();
   const guest = page();
-  host.attach(hostOnlineGame(PAGES_URL, host.controller, host.onStatus, fake.connector));
+  const options = { connector: fake.connector };
+  const hostSession = hostOnlineGame(PAGES_URL, host.controller, host.onStatus, options);
+  host.attach(hostSession);
   fake.register('abc');
   await settle();
-  guest.attach(joinOnlineGame('abc', guest.controller, guest.onStatus, fake.connector));
+  const guestSession = joinOnlineGame('abc', guest.controller, guest.onStatus, options);
+  guest.attach(guestSession);
   const [hostEnd, guestEnd] = fake.connect();
   await settle();
-  return { host, guest, hostEnd, guestEnd };
+  return { host, guest, hostSession, guestSession, hostEnd, guestEnd };
 }
 
 type Page = ReturnType<typeof page>;
 
-/** Clicks `moves` in turn, red on the host's board and yellow on the guest's. */
-async function clickMoves(host: Page, guest: Page, moves: string): Promise<void> {
+/** Clicks `moves` in turn, red on the first page's board and yellow on the second's. */
+async function clickMoves(red: Page, yellow: Page, moves: string): Promise<void> {
   for (const [index, column] of [...moves].entries()) {
-    (index % 2 === 0 ? host : guest).click(Number(column));
+    (index % 2 === 0 ? red : yellow).click(Number(column));
     await settle();
   }
 }
@@ -413,6 +458,8 @@ describe('an online game', () => {
     ["a repeat of the host's move", '3', { type: 'move', index: 0, column: 3 }],
     ['an unparseable message', '3', 'garbage'],
     ['an unknown message type', '3', { type: 'resign' }],
+    ['a rematch request during the game', '3', { type: 'rematch-request' }],
+    ['a rematch accept nobody asked for', '0011223', { type: 'rematch-accept' }],
   ])('marks the game out of sync on both sides after %s', async (_, moves, message) => {
     const { host, guest, hostEnd, guestEnd } = await connectPages();
     await clickMoves(host, guest, moves);
@@ -423,13 +470,196 @@ describe('an online game', () => {
     for (const side of [host, guest]) {
       expect(side.statuses.at(-1)).toEqual({ kind: 'out-of-sync' });
       expect(side.statusText()).toBe('Game out of sync');
+      expect(side.rematch()).toBeUndefined();
     }
     expect(hostEnd.isOpen).toBe(false);
     expect(guestEnd.isOpen).toBe(false);
 
     guest.click(5);
     host.click(5);
-    await settle();
+    await wait(30_000);
     expect(host.controller.state.history).toEqual([...moves].map(Number));
+    // The closed channel and the silence do not turn it into a lost connection.
+    expect(host.statusText()).toBe('Game out of sync');
+    expect(guest.statusText()).toBe('Game out of sync');
+  });
+});
+
+describe('a lost connection', () => {
+  it('is not reported while both pages are open, however long a turn takes', async () => {
+    const { host, guest } = await connectPages();
+    await wait(60_000);
+    expect(host.statusText()).toBe('Your turn');
+    expect(guest.statusText()).toBe("Opponent's turn");
+  });
+
+  it('is reported after about 10 s without any message, and locks the board', async () => {
+    const { host, guest, guestEnd } = await connectPages();
+    await clickMoves(host, guest, '3');
+    // The guest's tab went away without closing the connection.
+    vi.spyOn(guestEnd, 'send').mockImplementation(() => {});
+    await wait(9_000);
+    expect(host.statusText()).toBe("Opponent's turn");
+    await wait(1_000);
+    expect(host.statuses.at(-1)).toEqual({ kind: 'connection-lost' });
+    expect(host.statusText()).toBe('Connection lost');
+
+    // The host's page closed the connection, so the guest learns it too.
+    await settle();
+    expect(guest.statusText()).toBe('Connection lost');
+    guest.click(4);
+    await settle();
+    expect(guest.controller.state.history).toEqual([3]);
+  });
+
+  it('is reported on both sides as soon as the channel closes', async () => {
+    const { host, guest, hostEnd } = await connectPages();
+    await clickMoves(host, guest, '0011223');
+    hostEnd.close();
+    await settle();
+    for (const side of [host, guest]) {
+      expect(side.statusText()).toBe('Connection lost');
+      expect(side.rematch()).toBeUndefined();
+    }
+    host.click(4);
+    guest.click(4);
+    expect(host.controller.state.history).toHaveLength(7);
+    expect(guest.controller.state.history).toHaveLength(7);
+  });
+});
+
+describe('joining a link', () => {
+  it('gives up after about 15 s if the game cannot be reached', async () => {
+    const fake = fakeConnector();
+    const guest = page();
+    joinOnlineGame('made-up', guest.controller, guest.onStatus, { connector: fake.connector });
+    await wait(14_000);
+    expect(guest.statusText()).toBe('Connecting…');
+    await wait(1_000);
+    expect(guest.statuses.at(-1)).toEqual({ kind: 'join-failed' });
+    expect(guest.statusText()).toBe('Could not join this game. Ask for a new link.');
+
+    // A connection that opens after all is closed right away.
+    const [, guestEnd] = fake.connect();
+    await settle();
+    expect(guestEnd.isOpen).toBe(false);
+    expect(guest.statuses.at(-1)).toEqual({ kind: 'join-failed' });
+  });
+
+  it('gives up if the connection opens but the game never starts', async () => {
+    const fake = fakeConnector();
+    const guest = page();
+    joinOnlineGame('abc', guest.controller, guest.onStatus, { connector: fake.connector });
+    // Nobody answers on the host's end of the channel.
+    const [, guestEnd] = fake.connect();
+    await wait(15_000);
+    expect(guest.statusText()).toBe('Could not join this game. Ask for a new link.');
+    expect(guestEnd.isOpen).toBe(false);
+  });
+
+  it('reports a link whose game is already full as not joinable', async () => {
+    const fake = fakeConnector();
+    const guest = page();
+    joinOnlineGame('abc', guest.controller, guest.onStatus, { connector: fake.connector });
+    // The host turns a second guest away by closing the new connection.
+    const [hostEnd] = fake.connect();
+    hostEnd.close();
+    await settle();
+    expect(guest.statusText()).toBe('Could not join this game. Ask for a new link.');
+  });
+});
+
+describe('a rematch', () => {
+  /** Plays a game the host wins, so both pages show the rematch button. */
+  async function finishedGame() {
+    const pages = await connectPages();
+    await clickMoves(pages.host, pages.guest, '0011223');
+    return pages;
+  }
+
+  it('is offered to both players once the game has ended', async () => {
+    const { host, guest } = await connectPages();
+    expect(host.rematch()).toBeUndefined();
+    await clickMoves(host, guest, '001122');
+    expect(guest.rematch()).toBeUndefined();
+    await clickMoves(host, guest, '3');
+    for (const side of [host, guest]) {
+      expect(side.rematch()).toEqual({ text: '', button: 'Rematch', enabled: true });
+    }
+    expect(host.statusText()).toBe('You win!');
+  });
+
+  it('starts once the opponent accepts, with the other player starting as red', async () => {
+    const { host, guest } = await finishedGame();
+    host.clickRematch();
+    await settle();
+    expect(host.rematch()).toEqual({
+      text: 'Waiting for your opponent to accept…',
+      button: 'Rematch',
+      enabled: false,
+    });
+    expect(guest.rematch()).toEqual({
+      text: 'Opponent wants a rematch',
+      button: 'Accept',
+      enabled: true,
+    });
+    expect(host.statusText()).toBe('You win!');
+
+    guest.clickRematch();
+    await settle();
+    for (const side of [host, guest]) {
+      expect(side.controller.state.history).toEqual([]);
+      expect(side.rematch()).toBeUndefined();
+    }
+    expect(guest.statusText()).toBe('Your turn');
+    expect(host.statusText()).toBe("Opponent's turn");
+
+    // The guest now plays red; this time the guest wins.
+    await clickMoves(guest, host, '0011223');
+    expect(host.controller.state).toEqual(guest.controller.state);
+    expect(guest.statusText()).toBe('You win!');
+    expect(host.statusText()).toBe('Opponent wins!');
+
+    // The next rematch lets the host start again.
+    guest.clickRematch();
+    await settle();
+    host.clickRematch();
+    await settle();
+    expect(host.statusText()).toBe('Your turn');
+    expect(guest.statusText()).toBe("Opponent's turn");
+    await clickMoves(host, guest, '3');
+    expect(guest.controller.state.history).toEqual([3]);
+  });
+
+  it('does not start from a request alone', async () => {
+    const { host, guest } = await finishedGame();
+    host.clickRematch();
+    await wait(60_000);
+    for (const side of [host, guest]) {
+      expect(side.controller.state.history).toHaveLength(7);
+    }
+    expect(host.statusText()).toBe('You win!');
+    expect(guest.rematch()?.button).toBe('Accept');
+  });
+
+  it('starts once on both sides when both ask at the same time', async () => {
+    const { host, guest } = await finishedGame();
+    host.clickRematch();
+    guest.clickRematch();
+    await settle();
+    expect(guest.statusText()).toBe('Your turn');
+    expect(host.statusText()).toBe("Opponent's turn");
+    await clickMoves(guest, host, '34');
+    expect(host.controller.state.history).toEqual([3, 4]);
+    expect(guest.controller.state.history).toEqual([3, 4]);
+    expect(host.statuses.filter((s) => s.kind === 'connected')).toHaveLength(2);
+  });
+
+  it('cannot be asked for during a game', async () => {
+    const { host, guest, guestSession, guestEnd } = await connectPages();
+    await clickMoves(host, guest, '3');
+    const send = vi.spyOn(guestEnd, 'send');
+    guestSession.rematch();
+    expect(send).not.toHaveBeenCalled();
   });
 });
