@@ -7,6 +7,7 @@ import {
   type OnlineSession,
   type OnlineStatus,
 } from './app/online';
+import { createWorkerEngine } from './bot/engine';
 import { createModeView, DEFAULT_MODE_SETTINGS, type ModeSettings } from './ui/mode-view';
 import { createOnlineView, onlineStatusText } from './ui/online-view';
 
@@ -46,6 +47,7 @@ const controller = createGameController(
   { status: statusContainer, board: boardContainer },
   {
     seats: seatsFor(initialSettings),
+    engine: createWorkerEngine(),
     onHumanMove: (index, column) => session?.sendMove(index, column),
   },
 );

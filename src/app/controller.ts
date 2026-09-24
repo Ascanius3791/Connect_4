@@ -1,6 +1,8 @@
-import { chooseRandomMove, type RandomSource } from '../bot/random-bot';
+import type { Engine } from '../bot/engine';
+import type { RandomSource } from '../bot/random-bot';
+import { searchMove } from '../bot/search';
 import type { Player } from '../game/board';
-import { newGame, playMove, type GameState } from '../game/game';
+import { canPlay, newGame, playMove, type GameState } from '../game/game';
 import { createBoardView } from '../ui/board-view';
 import { createStatusView } from '../ui/status-view';
 
@@ -16,11 +18,28 @@ export type Seats = Readonly<Record<Player, Seat>>;
 /** Pause before a bot move, so the human can follow the game. */
 export const DEFAULT_BOT_DELAY_MS = 500;
 
+/** How long the bot's search may think about a move. */
+export const BOT_TIME_LIMIT_MS = 1000;
+
+/**
+ * Depth of the in-process search that picks the bot's move when the engine
+ * fails. A fixed depth keeps it to a few milliseconds on the page.
+ */
+export const FALLBACK_DEPTH = 8;
+
 export interface ControllerOptions {
   readonly seats: Seats;
-  /** Milliseconds between the bot's turn starting and its move. */
+  /**
+   * Searches the bot's moves. The page passes a worker engine; tests pass a
+   * fake. Only used when a seat is `'bot'`.
+   */
+  readonly engine: Engine;
+  /**
+   * Least time between the bot's turn starting and its move; the move waits
+   * for this pause and the engine's answer, which run at the same time.
+   */
   readonly botDelayMs?: number;
-  /** Random source for the bot; tests pass a fixed one. */
+  /** Random source for the fallback search when the engine fails; tests pass a fixed one. */
   readonly random?: RandomSource;
   /**
    * Called after each move made by clicking, once it is on the board, with
@@ -33,7 +52,8 @@ export interface GameController {
   /** The game currently shown. */
   readonly state: GameState;
   /**
-   * Starts over with an empty board and cancels a pending bot move. Given new
+   * Starts over with an empty board and cancels a pending bot move, which
+   * then never appears. Given new
    * seats, the new game uses them; otherwise it keeps the current ones.
    */
   newGame(seats?: Seats): void;
@@ -52,15 +72,15 @@ export interface GameController {
 
 /**
  * Owns the running game: builds the status and board views in their
- * containers, applies column clicks on a human's turn, plays bot moves after
- * a short delay, takes remote moves from outside, and re-renders after every
- * change.
+ * containers, applies column clicks on a human's turn, plays bot moves once
+ * the engine has answered and a short pause has passed, takes remote moves
+ * from outside, and re-renders after every change.
  */
 export function createGameController(
   containers: { readonly status: HTMLElement; readonly board: HTMLElement },
   options: ControllerOptions,
 ): GameController {
-  const { botDelayMs = DEFAULT_BOT_DELAY_MS, random = Math.random, onHumanMove } = options;
+  const { engine, botDelayMs = DEFAULT_BOT_DELAY_MS, random = Math.random, onHumanMove } = options;
   let seats = options.seats;
   let state = newGame();
   let notice: string | undefined;
@@ -77,6 +97,7 @@ export function createGameController(
     seats = nextSeats;
     clearTimeout(pendingBotMove);
     pendingBotMove = undefined;
+    engine.cancel();
     show(newGame());
   }
 
@@ -91,12 +112,41 @@ export function createGameController(
   function show(next: GameState): void {
     state = next;
     render();
-    if (state.status.kind === 'playing' && seats[state.currentPlayer] === 'bot') {
-      pendingBotMove = setTimeout(() => {
-        pendingBotMove = undefined;
-        play(chooseRandomMove(state, random));
-      }, botDelayMs);
-    }
+    if (state.status.kind === 'playing' && seats[state.currentPlayer] === 'bot') startBotMove();
+  }
+
+  /**
+   * Starts the engine's search and the pause together and plays the answer
+   * once both are done. Every new game and every move replaces `state`, so an
+   * answer for an older position is recognised and dropped.
+   */
+  function startBotMove(): void {
+    const position = state;
+    let answer: number | undefined;
+    let paused = false;
+    const playWhenReady = () => {
+      if (answer !== undefined && paused && state === position) play(answer);
+    };
+    pendingBotMove = setTimeout(() => {
+      pendingBotMove = undefined;
+      paused = true;
+      playWhenReady();
+    }, botDelayMs);
+    engine
+      .search(position, { timeLimitMs: BOT_TIME_LIMIT_MS })
+      .then(({ column }) => {
+        if (!canPlay(position, column)) throw new Error(`Engine chose illegal column ${column}`);
+        return column;
+      })
+      .catch((error: unknown) => {
+        if (state !== position) return undefined;
+        console.error('The search failed; the computer falls back to a quick search.', error);
+        return searchMove(position, { maxDepth: FALLBACK_DEPTH, random }).column;
+      })
+      .then((column) => {
+        answer = column;
+        playWhenReady();
+      });
   }
 
   function render(): void {

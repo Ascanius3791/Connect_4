@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createInProcessEngine } from '../bot/engine';
 import { newGame, playMove, type GameState } from '../game/game';
 import { createChannelPair, type Channel, type JsonValue } from '../net/channel';
 import { PROTOCOL_VERSION } from '../net/protocol';
@@ -236,7 +237,11 @@ function page() {
   const statuses: OnlineStatus[] = [];
   const controller = createGameController(
     { status, board },
-    { seats: { 1: 'human', 2: 'human' }, onHumanMove: (i, c) => session?.sendMove(i, c) },
+    {
+      seats: { 1: 'human', 2: 'human' },
+      engine: createInProcessEngine(),
+      onHumanMove: (i, c) => session?.sendMove(i, c),
+    },
   );
   const onlineView = createOnlineView(online, () => session?.rematch());
   const rematchButton = () => online.querySelector<HTMLButtonElement>('button.rematch');
