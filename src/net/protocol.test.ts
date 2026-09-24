@@ -66,4 +66,19 @@ describe('helloMessage', () => {
     expect(helloMessage()).toEqual({ type: 'hello', version: PROTOCOL_VERSION });
     expect(parseMessage(helloMessage())).toEqual(helloMessage());
   });
+
+  it('carries a given version', () => {
+    expect(helloMessage(7)).toEqual({ type: 'hello', version: 7 });
+  });
+});
+
+describe('Message', () => {
+  it('rejects misspelled types and incomplete moves at compile time', () => {
+    // @ts-expect-error: 'mvoe' is not a message type.
+    const misspelled: Message = { type: 'mvoe', index: 0, column: 3 };
+    // @ts-expect-error: a move needs its index.
+    const withoutIndex: Message = { type: 'move', column: 3 };
+    expect(parseMessage(misspelled)).toBeNull();
+    expect(parseMessage(withoutIndex)).toBeNull();
+  });
 });

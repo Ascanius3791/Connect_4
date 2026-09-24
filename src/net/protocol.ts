@@ -44,8 +44,9 @@ export type Message =
   | PingMessage
   | OutOfSyncMessage;
 
-export function helloMessage(): HelloMessage {
-  return { type: 'hello', version: PROTOCOL_VERSION };
+/** The only place a `hello` is built, so every sender agrees on its shape. */
+export function helloMessage(version = PROTOCOL_VERSION): HelloMessage {
+  return { type: 'hello', version };
 }
 
 /**

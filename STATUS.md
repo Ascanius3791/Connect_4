@@ -1,6 +1,6 @@
 # Project status
 
-_Last updated: 2026-09-24, after issue #24 (review fixes: host links survive a short network drop, abandoned joins no longer use up the host's game)._
+_Last updated: 2026-09-24, after issue #25 (code cleanup: the compiler now checks every online message; nothing changes in the game)._
 
 ## Can I play yet?
 
@@ -38,5 +38,5 @@ Changing the mode or who starts begins a new game right away. "New game" starts 
 
 ## Next up
 
-1. #25: a small code cleanup from the milestone 4 review
-2. Then a play-test checklist for milestone 4, and on to milestone 5 (GUI polish)
+1. Play-test milestone 4 on the website with the checklist, then close it
+2. Then on to milestone 5 (GUI polish)

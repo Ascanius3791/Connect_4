@@ -2,7 +2,13 @@ import type { Player } from '../game/board';
 import { canPlay, type GameState } from '../game/game';
 import type { Channel, JsonValue } from '../net/channel';
 import { hostConnection, joinConnection } from '../net/connection';
-import { parseMessage, PROTOCOL_VERSION, type MoveMessage } from '../net/protocol';
+import {
+  helloMessage,
+  parseMessage,
+  PROTOCOL_VERSION,
+  type Message,
+  type MoveMessage,
+} from '../net/protocol';
 import type { GameController, Seats } from './controller';
 
 /**
@@ -132,7 +138,7 @@ export function handshake(
     done = true;
     onResult(message.version === version ? 'connected' : 'version-mismatch');
   });
-  channel.send({ type: 'hello', version });
+  channel.send(helloMessage(version));
 }
 
 /** What to do with a move received from the opponent. */
@@ -369,7 +375,7 @@ class Session implements OnlineSession {
     this.#silenceTimer = setTimeout(() => this.lose(), this.timings.lostTimeoutMs);
   }
 
-  #send(message: JsonValue): void {
+  #send(message: Message): void {
     if (this.#channel?.isOpen) this.#channel.send(message);
   }
 
