@@ -1,3 +1,5 @@
+import { DEFAULT_LEVEL, type Level } from '../bot/levels';
+
 export type Mode = 'two-players' | 'computer' | 'online';
 
 /** Who moves first in computer mode; the starter plays red. */
@@ -7,9 +9,15 @@ export interface ModeSettings {
   readonly mode: Mode;
   /** Only used in computer mode. */
   readonly starter: Starter;
+  /** The computer's strength; only used in computer mode. */
+  readonly level: Level;
 }
 
-export const DEFAULT_MODE_SETTINGS: ModeSettings = { mode: 'two-players', starter: 'human' };
+export const DEFAULT_MODE_SETTINGS: ModeSettings = {
+  mode: 'two-players',
+  starter: 'human',
+  level: DEFAULT_LEVEL,
+};
 
 const MODE_OPTIONS: readonly (readonly [Mode, string])[] = [
   ['two-players', 'Two players'],
@@ -22,10 +30,18 @@ const STARTER_OPTIONS: readonly (readonly [Starter, string])[] = [
   ['computer', 'Computer starts'],
 ];
 
+const LEVEL_OPTIONS: readonly (readonly [Level, string])[] = [
+  ['beginner', 'Beginner'],
+  ['easy', 'Easy'],
+  ['medium', 'Medium'],
+  ['hard', 'Hard'],
+  ['expert', 'Expert'],
+];
+
 /**
- * Builds the mode and start choices inside `container` as native radio
- * groups and reports the full settings to `onChange` whenever either changes.
- * The start choice is only shown in computer mode.
+ * Builds the mode, start and level choices inside `container` as native
+ * radio groups and reports the full settings to `onChange` whenever one of
+ * them changes. The start and level choices are only shown in computer mode.
  */
 export function createModeView(
   container: HTMLElement,
@@ -44,14 +60,22 @@ export function createModeView(
     settings.starter,
     (starter) => update({ ...settings, starter }),
   );
-  starterGroup.hidden = settings.mode !== 'computer';
+  const levelGroup = radioGroup('Level', 'level', LEVEL_OPTIONS, settings.level, (level) =>
+    update({ ...settings, level }),
+  );
+  showComputerChoices();
 
-  container.replaceChildren(modeGroup, starterGroup);
+  container.replaceChildren(modeGroup, starterGroup, levelGroup);
 
   function update(next: ModeSettings): void {
     settings = next;
-    starterGroup.hidden = settings.mode !== 'computer';
+    showComputerChoices();
     onChange(settings);
+  }
+
+  function showComputerChoices(): void {
+    starterGroup.hidden = settings.mode !== 'computer';
+    levelGroup.hidden = settings.mode !== 'computer';
   }
 }
 

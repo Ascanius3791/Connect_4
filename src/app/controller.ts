@@ -1,4 +1,5 @@
 import type { Engine } from '../bot/engine';
+import { chooseLevelMove, DEFAULT_LEVEL, LEVEL_PLAY, type Level } from '../bot/levels';
 import type { RandomSource } from '../bot/random-bot';
 import { searchMove } from '../bot/search';
 import type { Player } from '../game/board';
@@ -18,19 +19,19 @@ export type Seats = Readonly<Record<Player, Seat>>;
 /** Pause before a bot move, so the human can follow the game. */
 export const DEFAULT_BOT_DELAY_MS = 500;
 
-/** How long the bot's search may think about a move. */
-export const BOT_TIME_LIMIT_MS = 1000;
-
 /**
- * Depth of the in-process search that picks the bot's move when the engine
- * fails. A fixed depth keeps it to a few milliseconds on the page.
+ * Deepest in-process search that picks the bot's move when the engine
+ * fails (shallower if the level searches less deeply). A fixed depth keeps
+ * it to a few milliseconds on the page.
  */
 export const FALLBACK_DEPTH = 8;
 
 export interface ControllerOptions {
   readonly seats: Seats;
+  /** How strong the bot plays; Medium by default. */
+  readonly level?: Level;
   /**
-   * Searches the bot's moves. The page passes a worker engine; tests pass a
+   * Searches the bot's moves for the levels that search. The page passes a worker engine; tests pass a
    * fake. Only used when a seat is `'bot'`.
    */
   readonly engine: Engine;
@@ -39,7 +40,10 @@ export interface ControllerOptions {
    * for this pause and the engine's answer, which run at the same time.
    */
   readonly botDelayMs?: number;
-  /** Random source for the fallback search when the engine fails; tests pass a fixed one. */
+  /**
+   * Random source for the levels that do not search and for the fallback
+   * search when the engine fails; tests pass a fixed one.
+   */
   readonly random?: RandomSource;
   /**
    * Called after each move made by clicking, once it is on the board, with
@@ -53,10 +57,10 @@ export interface GameController {
   readonly state: GameState;
   /**
    * Starts over with an empty board and cancels a pending bot move, which
-   * then never appears. Given new
-   * seats, the new game uses them; otherwise it keeps the current ones.
+   * then never appears. Given new seats or a new level, the new game uses
+   * them; otherwise it keeps the current ones.
    */
-  newGame(seats?: Seats): void;
+  newGame(seats?: Seats, level?: Level): void;
   /**
    * Plays `column` for the current player if their seat is `'remote'` and the
    * move is legal. Returns whether it was played.
@@ -82,6 +86,7 @@ export function createGameController(
 ): GameController {
   const { engine, botDelayMs = DEFAULT_BOT_DELAY_MS, random = Math.random, onHumanMove } = options;
   let seats = options.seats;
+  let level = options.level ?? DEFAULT_LEVEL;
   let state = newGame();
   let notice: string | undefined;
   let pendingBotMove: ReturnType<typeof setTimeout> | undefined;
@@ -93,8 +98,9 @@ export function createGameController(
   });
   show(state);
 
-  function restart(nextSeats: Seats = seats): void {
+  function restart(nextSeats: Seats = seats, nextLevel: Level = level): void {
     seats = nextSeats;
+    level = nextLevel;
     clearTimeout(pendingBotMove);
     pendingBotMove = undefined;
     engine.cancel();
@@ -116,9 +122,10 @@ export function createGameController(
   }
 
   /**
-   * Starts the engine's search and the pause together and plays the answer
-   * once both are done. Every new game and every move replaces `state`, so an
-   * answer for an older position is recognised and dropped.
+   * Starts the level's move (the engine's search, or a quick rule on the
+   * page) and the pause together and plays the answer once both are done.
+   * Every new game and every move replaces `state`, so an answer for an
+   * older position is recognised and dropped.
    */
   function startBotMove(): void {
     const position = state;
@@ -132,8 +139,14 @@ export function createGameController(
       paused = true;
       playWhenReady();
     }, botDelayMs);
+    const levelPlay = LEVEL_PLAY[level];
+    if (levelPlay.kind !== 'search') {
+      answer = chooseLevelMove(position, level, random);
+      return;
+    }
+    const { options: searchOptions } = levelPlay;
     engine
-      .search(position, { timeLimitMs: BOT_TIME_LIMIT_MS })
+      .search(position, searchOptions)
       .then(({ column }) => {
         if (!canPlay(position, column)) throw new Error(`Engine chose illegal column ${column}`);
         return column;
@@ -141,7 +154,9 @@ export function createGameController(
       .catch((error: unknown) => {
         if (state !== position) return undefined;
         console.error('The search failed; the computer falls back to a quick search.', error);
-        return searchMove(position, { maxDepth: FALLBACK_DEPTH, random }).column;
+        const maxDepth = Math.min(searchOptions.maxDepth ?? FALLBACK_DEPTH, FALLBACK_DEPTH);
+        const { noiseMargin } = searchOptions;
+        return searchMove(position, { maxDepth, noiseMargin, random }).column;
       })
       .then((column) => {
         answer = column;

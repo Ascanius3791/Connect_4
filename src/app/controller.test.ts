@@ -1,15 +1,11 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Engine, EngineSearchOptions } from '../bot/engine';
+import { LEVEL_PLAY, type Level } from '../bot/levels';
 import type { SearchResult } from '../bot/search';
 import { legalColumns } from '../game/board';
 import { canPlay, newGame, playMove, type GameState } from '../game/game';
-import {
-  BOT_TIME_LIMIT_MS,
-  createGameController,
-  DEFAULT_BOT_DELAY_MS,
-  type Seats,
-} from './controller';
+import { createGameController, DEFAULT_BOT_DELAY_MS, type Seats } from './controller';
 
 const HUMAN_VS_HUMAN: Seats = { 1: 'human', 2: 'human' };
 const HUMAN_VS_BOT: Seats = { 1: 'human', 2: 'bot' };
@@ -91,6 +87,13 @@ function manualEngine() {
   };
 }
 
+/** The search options of a level that searches. */
+function searchOptions(level: Level): EngineSearchOptions {
+  const play = LEVEL_PLAY[level];
+  if (play.kind !== 'search') throw new Error(`${level} does not search`);
+  return play.options;
+}
+
 /** Lets pending promise callbacks run without moving the fake clock. */
 const settle = async (): Promise<void> => {
   await vi.advanceTimersByTimeAsync(0);
@@ -101,11 +104,11 @@ function start(seats: Seats) {
   return createGameController({ status, board }, { seats, engine: firstLegalEngine() });
 }
 
-function startManual(seats: Seats) {
+function startManual(seats: Seats, level?: Level) {
   const manual = manualEngine();
   const controller = createGameController(
     { status, board },
-    { seats, engine: manual.engine, random: () => 0 },
+    { seats, level, engine: manual.engine, random: () => 0 },
   );
   // Keeps the `cancels` getter live.
   return Object.assign(manual, { controller });
@@ -385,13 +388,79 @@ describe('createGameController', () => {
   });
 
   describe('with a search engine', () => {
-    it('asks the engine about the position with the time limit', () => {
+    it("asks the engine about the position with Medium's options by default", () => {
       const { searches } = startManual(HUMAN_VS_BOT);
       expect(searches).toHaveLength(0);
       clickColumn(3);
       expect(searches).toHaveLength(1);
       expect(searches[0]?.state.history).toEqual([3]);
-      expect(searches[0]?.options).toEqual({ timeLimitMs: BOT_TIME_LIMIT_MS });
+      expect(searches[0]?.options).toEqual(searchOptions('medium'));
+    });
+
+    it.each(['medium', 'hard', 'expert'] as const)(
+      "passes the %s level's search options to the engine",
+      (level) => {
+        const { searches } = startManual(BOT_VS_HUMAN, level);
+        expect(searches).toHaveLength(1);
+        expect(searches[0]?.options).toEqual(searchOptions(level));
+      },
+    );
+
+    it('starts a new game with the level passed to newGame and keeps it on New game', async () => {
+      const manual = startManual(HUMAN_VS_BOT, 'hard');
+      const { controller, searches } = manual;
+      clickColumn(3);
+      controller.newGame(BOT_VS_HUMAN, 'expert');
+      expect(manual.cancels).toBe(1);
+      expect(controller.state.history).toEqual([]);
+      expect(searches).toHaveLength(2);
+      expect(searches[1]?.options).toEqual(searchOptions('expert'));
+
+      // The old game's answer is dropped.
+      await searches[0]?.answer(2);
+      await vi.runAllTimersAsync();
+      expect(controller.state.history).toEqual([]);
+
+      clickNewGame();
+      expect(searches[2]?.options).toEqual(searchOptions('expert'));
+      controller.newGame(HUMAN_VS_BOT);
+      clickColumn(3);
+      expect(searches[3]?.options).toEqual(searchOptions('expert'));
+    });
+
+    it.each(['beginner', 'easy'] as const)(
+      'plays %s moves on the page after the pause, without the engine',
+      async (level) => {
+        const { controller, searches } = startManual(HUMAN_VS_BOT, level);
+        clickColumn(3);
+        await vi.advanceTimersByTimeAsync(DEFAULT_BOT_DELAY_MS - 1);
+        expect(controller.state.history).toEqual([3]);
+        expect(statusText()).toBe('Computer is thinking…');
+        await vi.advanceTimersByTimeAsync(1);
+        // `random` is 0, so a random move is the leftmost legal column.
+        expect(controller.state.history).toEqual([3, 0]);
+        expect(statusText()).toBe('Your turn');
+        expect(searches).toHaveLength(0);
+      },
+    );
+
+    it('lets Easy block a threat', async () => {
+      const { controller } = startManual(HUMAN_VS_BOT, 'easy');
+      for (const column of [1, 2, 3]) {
+        clickColumn(column);
+        await vi.advanceTimersByTimeAsync(DEFAULT_BOT_DELAY_MS);
+      }
+      // With `random` at 0, Easy's random moves go to column 0, which also
+      // closes the left end of Red's row; now it must block column 4.
+      expect(controller.state.history).toEqual([1, 0, 2, 0, 3, 4]);
+    });
+
+    it('cancels a pending Beginner move when the level changes', async () => {
+      const { controller } = startManual(HUMAN_VS_BOT, 'beginner');
+      clickColumn(3);
+      controller.newGame(HUMAN_VS_BOT, 'easy');
+      await vi.runAllTimersAsync();
+      expect(controller.state.history).toEqual([]);
     });
 
     it('plays an early answer only once the pause is over', async () => {

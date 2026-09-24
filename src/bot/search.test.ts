@@ -27,10 +27,10 @@ function play(moves: string): GameState {
 }
 
 /** Every column `searchMove` can pick, found by sweeping `random` over [0, 1). */
-function chosenColumns(state: GameState, maxDepth: number): Set<number> {
+function chosenColumns(state: GameState, maxDepth: number, noiseMargin?: number): Set<number> {
   const columns = new Set<number>();
   for (let k = 0; k < 8; k++) {
-    columns.add(searchMove(state, { maxDepth, random: () => (k + 0.5) / 8 }).column);
+    columns.add(searchMove(state, { maxDepth, noiseMargin, random: () => (k + 0.5) / 8 }).column);
   }
   return columns;
 }
@@ -54,8 +54,14 @@ function minimax(board: SearchBoard, ply: number, depth: number): number {
   return best;
 }
 
-/** The best root score and every column that reaches it, by plain minimax. */
-function reference(state: GameState, depth: number): { score: number; columns: Set<number> } {
+/**
+ * The best root score, every column that reaches it and every root score,
+ * by plain minimax.
+ */
+function reference(
+  state: GameState,
+  depth: number,
+): { score: number; columns: Set<number>; scores: Map<number, number> } {
   const board = SearchBoard.fromState(state);
   const scores = new Map<number, number>();
   for (const column of board.legalColumns()) {
@@ -69,7 +75,7 @@ function reference(state: GameState, depth: number): { score: number; columns: S
   }
   const score = Math.max(...scores.values());
   const columns = new Set([...scores].filter(([, s]) => s === score).map(([c]) => c));
-  return { score, columns };
+  return { score, columns, scores };
 }
 
 /** Random running positions with at least one move left. */
@@ -222,6 +228,32 @@ describe('searchMove', () => {
         expect(chosenColumns(state, depth)).toEqual(expected.columns);
       }
     }
+  });
+
+  it('picks among the moves within the noise margin of the best', () => {
+    let widened = 0;
+    for (const state of randomPositions(30, 7)) {
+      for (const depth of [1, 2, 3]) {
+        const expected = reference(state, depth);
+        const proven = Math.abs(expected.score) > MAX_HEURISTIC_SCORE;
+        for (const margin of [3, 10]) {
+          const lowest = proven ? expected.score : expected.score - margin;
+          const within = new Set(
+            [...expected.scores].filter(([, s]) => s >= lowest).map(([c]) => c),
+          );
+          if (within.size > expected.columns.size) widened++;
+          expect(chosenColumns(state, depth, margin)).toEqual(within);
+        }
+      }
+    }
+    // The positions really exercise the margin.
+    expect(widened).toBeGreaterThan(10);
+  });
+
+  it('ignores the noise margin once a win or loss is proven', () => {
+    expect(chosenColumns(play('3322'), 6, 1000)).toEqual(new Set([1, 4]));
+    expect(chosenColumns(play('060633440'), 6, 1000)).toEqual(new Set([0]));
+    expect(chosenColumns(play('0516260'), 4, 1000)).toEqual(new Set([3]));
   });
 
   it('refuses a finished game', () => {

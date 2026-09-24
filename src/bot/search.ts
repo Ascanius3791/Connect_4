@@ -28,7 +28,14 @@ export interface SearchOptions {
    * neither option it uses DEFAULT_TIME_LIMIT_MS so it cannot run for ages.
    */
   readonly timeLimitMs?: number;
-  /** Picks among equally good moves; `Math.random` by default. */
+  /**
+   * Plays weaker on purpose: while no win or loss is proven, every move
+   * scoring at most this much below the best counts as good enough, and
+   * one of them is picked at random. 0 (the default) picks among the
+   * equally best moves only. In the heuristic's units (see `evaluate`).
+   */
+  readonly noiseMargin?: number;
+  /** Picks among the moves that count as best; `Math.random` by default. */
   readonly random?: RandomSource;
 }
 
@@ -70,6 +77,7 @@ export function searchMove(state: GameState, options: SearchOptions = {}): Searc
     options.timeLimitMs ?? (options.maxDepth === undefined ? DEFAULT_TIME_LIMIT_MS : Infinity);
   const deadline = performance.now() + timeLimit;
   const random = options.random ?? Math.random;
+  const margin = Math.max(0, options.noiseMargin ?? 0);
 
   const search = new Search(board);
   let order = SEARCH_ORDER.filter((column) => board.canPlay(column));
@@ -78,7 +86,7 @@ export function searchMove(state: GameState, options: SearchOptions = {}): Searc
     // Depth 1 always completes, so there is always a move to return.
     if (depth > 1 && performance.now() >= deadline) break;
     search.deadline = depth === 1 ? Infinity : deadline;
-    const result = search.root(order, depth);
+    const result = search.root(order, depth, margin);
     if (result === undefined) break;
     best = result;
     if (Math.abs(result.score) > MAX_HEURISTIC_SCORE) break;
@@ -88,7 +96,7 @@ export function searchMove(state: GameState, options: SearchOptions = {}): Searc
   }
   if (best === undefined) throw new Error('Depth 1 did not complete');
 
-  const columns = [...best.columns].sort((a, b) => a - b);
+  const columns = [...best.candidates].sort((a, b) => a - b);
   const column = columns[Math.min(columns.length - 1, Math.floor(random() * columns.length))];
   if (column === undefined) throw new Error('Cannot search a move: no legal column');
   return { column, result: describe(best, remaining, board.currentPlayer) };
@@ -101,6 +109,11 @@ interface RootResult {
   readonly score: number;
   /** Every column with that score, in search order (never empty). */
   readonly columns: readonly number[];
+  /**
+   * The columns to pick from: those within the noise margin of the best
+   * score, or only the best ones once a win or loss is proven.
+   */
+  readonly candidates: readonly number[];
 }
 
 function describe(best: RootResult, remaining: number, mover: Player): SearchResult {
@@ -130,33 +143,40 @@ class Search {
   constructor(private readonly board: SearchBoard) {}
 
   /**
-   * Scores every root move exactly enough to know which ones tie for best,
-   * or returns undefined when the clock ran out. Each move is searched
-   * with alpha one below the best score so far, so a tie comes back as the
-   * exact score instead of a bound.
+   * Scores every root move exactly enough to know which ones tie for best
+   * and which lie within `margin` of it, or returns undefined when the
+   * clock ran out. Each move is searched with alpha `margin + 1` below the
+   * best score so far, so such a move comes back as its exact score
+   * instead of a bound; a move below that gets an upper bound that is
+   * below it too.
    */
-  root(order: readonly number[], depth: number): RootResult | undefined {
+  root(order: readonly number[], depth: number, margin: number): RootResult | undefined {
     const board = this.board;
     let bestScore = -INFINITE;
-    let columns: number[] = [];
+    const scores: (readonly [column: number, score: number])[] = [];
     for (const column of order) {
       let score: number;
       if (board.isWinningMove(column)) {
         score = WIN_SCORE - 1;
       } else {
         board.play(column);
-        score = -this.negamax(1, depth - 1, -INFINITE, -(bestScore - 1));
+        score = -this.negamax(1, depth - 1, -INFINITE, -(bestScore - margin - 1));
         board.undo();
         if (this.aborted) return undefined;
       }
-      if (score > bestScore) {
-        bestScore = score;
-        columns = [column];
-      } else if (score === bestScore) {
-        columns.push(column);
-      }
+      scores.push([column, score]);
+      if (score > bestScore) bestScore = score;
     }
-    return { depth, score: bestScore, columns };
+    // Once a win or loss is proven, a random pick must not throw away a
+    // win or hurry a loss, so only the best moves stay.
+    const proven = Math.abs(bestScore) > MAX_HEURISTIC_SCORE;
+    const lowest = proven ? bestScore : bestScore - margin;
+    return {
+      depth,
+      score: bestScore,
+      columns: scores.filter(([, score]) => score === bestScore).map(([column]) => column),
+      candidates: scores.filter(([, score]) => score >= lowest).map(([column]) => column),
+    };
   }
 
   /**

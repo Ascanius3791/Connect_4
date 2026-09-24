@@ -35,9 +35,13 @@ const RED_WINS_AT_ONCE = play('010101');
 
 describe('search protocol', () => {
   it('sends only plain data, dropping a random function', () => {
-    const options = { maxDepth: 3, random: () => 0 };
+    const options = { maxDepth: 3, timeLimitMs: 500, noiseMargin: 4, random: () => 0 };
     const request = createSearchRequest(7, play('33'), options);
-    expect(request).toEqual({ id: 7, history: [3, 3], options: { maxDepth: 3 } });
+    expect(request).toEqual({
+      id: 7,
+      history: [3, 3],
+      options: { maxDepth: 3, timeLimitMs: 500, noiseMargin: 4 },
+    });
     expect(structuredClone(request)).toEqual(request);
   });
 

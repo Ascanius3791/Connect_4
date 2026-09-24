@@ -47,6 +47,7 @@ const controller = createGameController(
   { status: statusContainer, board: boardContainer },
   {
     seats: seatsFor(initialSettings),
+    level: initialSettings.level,
     engine: createWorkerEngine(),
     onHumanMove: (index, column) => session?.sendMove(index, column),
   },
@@ -66,7 +67,7 @@ createModeView(modeContainer, initialSettings, (settings) => {
   session = undefined;
   // The join link has served its purpose; reloading should not join again.
   if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-  controller.newGame(seatsFor(settings));
+  controller.newGame(seatsFor(settings), settings.level);
   if (settings.mode === 'online') {
     session = hostOnlineGame(location.href, controller, showOnlineStatus);
   } else {

@@ -29,8 +29,8 @@ export function createSearchRequest(
 ): SearchRequest {
   // Copies the fields one by one, so nothing that cannot be cloned (such
   // as a `random` function from a caller's wider options object) slips in.
-  const { maxDepth, timeLimitMs } = options;
-  return { id, history: [...state.history], options: { maxDepth, timeLimitMs } };
+  const { maxDepth, timeLimitMs, noiseMargin } = options;
+  return { id, history: [...state.history], options: { maxDepth, timeLimitMs, noiseMargin } };
 }
 
 /**
