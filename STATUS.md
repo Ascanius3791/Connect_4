@@ -1,17 +1,19 @@
 # Project status
 
-_Last updated: 2026-09-24, after issue #8._
+_Last updated: 2026-09-24, after issue #9._
 
 ## Can I play yet?
 
-**Not yet.** The deployed page (https://ascanius3791.github.io/Connect_4/) only shows a heading so far. The game rules are being built in the background; the first playable version arrives with #9, when the board appears and you can click columns to drop discs. This section will then explain how to play.
+**Yes, two players on one computer.** Open https://ascanius3791.github.io/Connect_4/ and take turns clicking a column; a disc drops into the lowest free slot. Red starts, then yellow. Hovering a column highlights it. Full columns and a finished game ignore clicks.
+
+Not there yet: the page does not show whose turn it is or who won, and there is no "New game" button (reload the page to start over). Both come with #10.
 
 ## Progress
 
 | Milestone      | Status                           |
 | -------------- | -------------------------------- |
 | 1. Setup       | Done                             |
-| 2. Local game  | In progress (3 of 5 issues done) |
+| 2. Local game  | In progress (4 of 5 issues done) |
 | 3. Random bot  | Planned                          |
 | 4. Online play | Planned                          |
 | 5. GUI polish  | Planned                          |
@@ -20,9 +22,9 @@ _Last updated: 2026-09-24, after issue #8._
 ## What works
 
 - Every push is checked automatically and deployed to the website.
-- Behind the scenes: a model of the 7 × 6 board that knows where a dropped disc lands and when a column is full, and rules that recognise four in a row (in any direction) and a draw on a full board, and a game manager that tracks whose turn it is, records every move, refuses illegal moves and knows when the game is won or drawn. Nothing of it is visible yet.
+- The board appears in the browser: 7 columns × 6 rows, red and yellow discs, click a column to play.
+- Behind the scenes, the game knows where discs land, whose turn it is, refuses illegal moves, and recognises four in a row in any direction and a draw.
 
 ## Next up
 
-1. #9 Show the board and drop discs by clicking a column ← **first playable version**
-2. #10 Show whose turn it is, the result, and a "New game" button
+1. #10 Show whose turn it is, the result, and a "New game" button

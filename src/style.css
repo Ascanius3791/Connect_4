@@ -1,6 +1,9 @@
 :root {
   font-family: system-ui, sans-serif;
   color-scheme: light dark;
+  /* Sized so the whole board fits a desktop window without scrolling. */
+  --cell: min(10vh, 9vw);
+  --gap: calc(var(--cell) / 8);
 }
 
 body {
@@ -8,4 +11,57 @@ body {
   min-height: 100vh;
   display: grid;
   place-items: center;
+}
+
+h1 {
+  margin: 0 0 1rem;
+  text-align: center;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(7, var(--cell));
+  gap: var(--gap);
+  padding: var(--gap);
+  border-radius: var(--gap);
+  background: #1f4fbf;
+}
+
+.column {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: var(--gap);
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: calc(var(--cell) / 2);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.column:disabled {
+  cursor: default;
+}
+
+.column:enabled:hover,
+.column:focus-visible {
+  background: rgb(255 255 255 / 25%);
+  outline: none;
+}
+
+.cell {
+  display: block;
+  width: var(--cell);
+  height: var(--cell);
+  border-radius: 50%;
+  background: Canvas;
+}
+
+.cell.player-1 {
+  background: #e53935;
+}
+
+.cell.player-2 {
+  background: #fdd835;
 }
