@@ -10,6 +10,7 @@ const validMessages: (Message & JsonValue)[] = [
   { type: 'rematch-request' },
   { type: 'rematch-accept' },
   { type: 'ping' },
+  { type: 'out-of-sync' },
 ];
 
 describe('parseMessage', () => {

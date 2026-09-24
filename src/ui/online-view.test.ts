@@ -56,6 +56,7 @@ describe('createOnlineView', () => {
     { kind: 'connecting' },
     { kind: 'connected' },
     { kind: 'version-mismatch' },
+    { kind: 'out-of-sync' },
     { kind: 'failed', message: 'x' },
   ])('hides the link for %o', (status) => {
     const view = createOnlineView(container);
@@ -101,15 +102,16 @@ describe('createOnlineView', () => {
 });
 
 describe('onlineStatusText', () => {
-  it.each<[OnlineStatus, string]>([
+  it.each<[OnlineStatus, string | undefined]>([
     [{ kind: 'creating' }, 'Creating game…'],
     [WAITING, 'Waiting for opponent…'],
     [{ kind: 'connecting' }, 'Connecting…'],
-    [{ kind: 'connected' }, 'Connected'],
+    [{ kind: 'connected' }, undefined],
     [
       { kind: 'version-mismatch' },
       'Your opponent is on a different version. Please both reload the page.',
     ],
+    [{ kind: 'out-of-sync' }, 'Game out of sync'],
     [{ kind: 'failed', message: 'No game found' }, 'No game found'],
   ])('describes %o', (status, text) => {
     expect(onlineStatusText(status)).toBe(text);

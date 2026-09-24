@@ -8,8 +8,11 @@ export interface OnlineView {
   render(status: OnlineStatus | undefined): void;
 }
 
-/** The status line text for `status`. */
-export function onlineStatusText(status: OnlineStatus): string {
+/**
+ * The status line text for `status`, or `undefined` once connected, when the
+ * line shows the game's own status instead.
+ */
+export function onlineStatusText(status: OnlineStatus): string | undefined {
   // No default branch: TypeScript reports a missing return if a new status kind is added.
   switch (status.kind) {
     case 'creating':
@@ -19,9 +22,11 @@ export function onlineStatusText(status: OnlineStatus): string {
     case 'connecting':
       return 'Connecting…';
     case 'connected':
-      return 'Connected';
+      return undefined;
     case 'version-mismatch':
       return 'Your opponent is on a different version. Please both reload the page.';
+    case 'out-of-sync':
+      return 'Game out of sync';
     case 'failed':
       return status.message;
   }

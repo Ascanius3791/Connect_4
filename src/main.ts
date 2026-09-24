@@ -26,7 +26,8 @@ app.replaceChildren(heading, modeContainer, onlineContainer, statusContainer, bo
 /** Player 1 always moves first and plays red, so the starter takes seat 1. */
 function seatsFor(settings: ModeSettings): Seats {
   switch (settings.mode) {
-    // Online moves are not sent over the connection yet; the connection notice keeps the board locked.
+    // Until connected, the connection notice keeps the board locked; the
+    // online session then starts a game with a remote seat.
     case 'online':
     case 'two-players':
       return { 1: 'human', 2: 'human' };
@@ -40,12 +41,15 @@ const joinId = parseJoinId(location.hash);
 const initialSettings: ModeSettings =
   joinId === undefined ? DEFAULT_MODE_SETTINGS : { ...DEFAULT_MODE_SETTINGS, mode: 'online' };
 
+let session: OnlineSession | undefined;
 const controller = createGameController(
   { status: statusContainer, board: boardContainer },
-  { seats: seatsFor(initialSettings) },
+  {
+    seats: seatsFor(initialSettings),
+    onHumanMove: (index, column) => session?.sendMove(index, column),
+  },
 );
 const onlineView = createOnlineView(onlineContainer);
-let session: OnlineSession | undefined;
 
 /** Shows the online setup in the link box and status line; `undefined` when offline. */
 function showOnlineStatus(status: OnlineStatus | undefined): void {
@@ -53,7 +57,7 @@ function showOnlineStatus(status: OnlineStatus | undefined): void {
   controller.setNotice(status && onlineStatusText(status));
 }
 
-if (joinId !== undefined) session = joinOnlineGame(joinId, showOnlineStatus);
+if (joinId !== undefined) session = joinOnlineGame(joinId, controller, showOnlineStatus);
 
 createModeView(modeContainer, initialSettings, (settings) => {
   session?.close();
@@ -61,8 +65,11 @@ createModeView(modeContainer, initialSettings, (settings) => {
   // The join link has served its purpose; reloading should not join again.
   if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   controller.newGame(seatsFor(settings));
-  if (settings.mode === 'online') session = hostOnlineGame(location.href, showOnlineStatus);
-  else showOnlineStatus(undefined);
+  if (settings.mode === 'online') {
+    session = hostOnlineGame(location.href, controller, showOnlineStatus);
+  } else {
+    showOnlineStatus(undefined);
+  }
 });
 
 // Pasting a join link into a tab that already shows the game only changes the

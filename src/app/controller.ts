@@ -5,10 +5,11 @@ import { createBoardView } from '../ui/board-view';
 import { createStatusView } from '../ui/status-view';
 
 /**
- * Who makes the moves for a player. Adding a kind (e.g. `'remote'`) makes
- * the compiler report every switch over seats that does not handle it yet.
+ * Who makes the moves for a player: someone clicking on this page, the
+ * computer, or the opponent on another PC. Adding a kind makes the compiler
+ * report every switch over seats that does not handle it yet.
  */
-export type Seat = 'human' | 'bot';
+export type Seat = 'human' | 'bot' | 'remote';
 
 export type Seats = Readonly<Record<Player, Seat>>;
 
@@ -21,6 +22,11 @@ export interface ControllerOptions {
   readonly botDelayMs?: number;
   /** Random source for the bot; tests pass a fixed one. */
   readonly random?: RandomSource;
+  /**
+   * Called after each move made by clicking, once it is on the board, with
+   * its index in the game's history. Online play sends it to the opponent.
+   */
+  readonly onHumanMove?: (index: number, column: number) => void;
 }
 
 export interface GameController {
@@ -32,6 +38,11 @@ export interface GameController {
    */
   newGame(seats?: Seats): void;
   /**
+   * Plays `column` for the current player if their seat is `'remote'` and the
+   * move is legal. Returns whether it was played.
+   */
+  playRemoteMove(column: number): boolean;
+  /**
    * Shows `notice` in the status line instead of the game's status, and
    * ignores column clicks and disables "New game" until it is cleared with
    * `undefined`. Survives new games.
@@ -42,13 +53,14 @@ export interface GameController {
 /**
  * Owns the running game: builds the status and board views in their
  * containers, applies column clicks on a human's turn, plays bot moves after
- * a short delay, and re-renders after every change.
+ * a short delay, takes remote moves from outside, and re-renders after every
+ * change.
  */
 export function createGameController(
   containers: { readonly status: HTMLElement; readonly board: HTMLElement },
   options: ControllerOptions,
 ): GameController {
-  const { botDelayMs = DEFAULT_BOT_DELAY_MS, random = Math.random } = options;
+  const { botDelayMs = DEFAULT_BOT_DELAY_MS, random = Math.random, onHumanMove } = options;
   let seats = options.seats;
   let state = newGame();
   let notice: string | undefined;
@@ -56,7 +68,8 @@ export function createGameController(
 
   const statusView = createStatusView(containers.status, () => restart());
   const boardView = createBoardView(containers.board, (column) => {
-    if (notice === undefined && acceptsClicks(seats[state.currentPlayer])) play(column);
+    if (notice !== undefined || !acceptsClicks(seats[state.currentPlayer])) return;
+    if (play(column)) onHumanMove?.(state.history.length - 1, column);
   });
   show(state);
 
@@ -67,9 +80,12 @@ export function createGameController(
     show(newGame());
   }
 
-  function play(column: number): void {
+  /** Plays `column` for the current player; returns false if the move is illegal. */
+  function play(column: number): boolean {
     const next = playMove(state, column);
-    if (next !== state) show(next);
+    if (next === state) return false;
+    show(next);
+    return true;
   }
 
   function show(next: GameState): void {
@@ -93,6 +109,9 @@ export function createGameController(
       return state;
     },
     newGame: restart,
+    playRemoteMove(column) {
+      return seats[state.currentPlayer] === 'remote' && play(column);
+    },
     setNotice(next) {
       notice = next;
       render();
@@ -107,6 +126,7 @@ function acceptsClicks(seat: Seat): boolean {
     case 'human':
       return true;
     case 'bot':
+    case 'remote':
       return false;
   }
 }

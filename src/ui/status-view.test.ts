@@ -8,6 +8,8 @@ const DRAW_GAME = '231220400060316366502612332554644541451513';
 const TWO_HUMANS: Seats = { 1: 'human', 2: 'human' };
 const HUMAN_STARTS: Seats = { 1: 'human', 2: 'bot' };
 const COMPUTER_STARTS: Seats = { 1: 'bot', 2: 'human' };
+const ONLINE_HOST: Seats = { 1: 'human', 2: 'remote' };
+const ONLINE_GUEST: Seats = { 1: 'remote', 2: 'human' };
 
 function play(moves: string): GameState {
   return [...moves].reduce((s, c) => playMove(s, Number(c)), newGame());
@@ -117,5 +119,27 @@ describe('createStatusView against the computer', () => {
   it('uses colour names when the computer plays both sides', () => {
     createStatusView(container, () => {}).render(play('0011223'), { 1: 'bot', 2: 'bot' });
     expect(statusText()).toBe('Red wins!');
+  });
+});
+
+describe('createStatusView in an online game', () => {
+  it.each([
+    ['the host', ONLINE_HOST, '', 'Your turn'],
+    ['the host', ONLINE_HOST, '3', "Opponent's turn"],
+    ['the guest', ONLINE_GUEST, '', "Opponent's turn"],
+    ['the guest', ONLINE_GUEST, '3', 'Your turn'],
+    ['the host', ONLINE_HOST, '0011223', 'You win!'],
+    ['the guest', ONLINE_GUEST, '0011223', 'Opponent wins!'],
+    ['the host', ONLINE_HOST, '60011223', 'Opponent wins!'],
+    ['the guest', ONLINE_GUEST, '60011223', 'You win!'],
+    ['the host', ONLINE_HOST, DRAW_GAME, 'Draw!'],
+  ])('speaks to %s (moves "%s")', (_, seats, moves, text) => {
+    createStatusView(container, () => {}).render(play(moves), seats);
+    expect(statusText()).toBe(text);
+  });
+
+  it('disables New game', () => {
+    createStatusView(container, () => {}).render(play('0011223'), ONLINE_GUEST);
+    expect(container.querySelector<HTMLButtonElement>('button.new-game')?.disabled).toBe(true);
   });
 });

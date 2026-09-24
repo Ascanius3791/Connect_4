@@ -5,7 +5,7 @@ import { COLUMNS } from '../game/board';
  * an opponent running the previous deployment, so both sides can tell the
  * players to reload instead of failing in odd ways.
  */
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 
 /** First message each side sends after connecting. */
 export type HelloMessage = { readonly type: 'hello'; readonly version: number };
@@ -26,9 +26,20 @@ export type RematchAcceptMessage = { readonly type: 'rematch-accept' };
 /** Keep-alive, so a silent connection can be told apart from a lost one. */
 export type PingMessage = { readonly type: 'ping' };
 
+/**
+ * Sent before closing the connection when the sender received something that
+ * does not fit its game, so both players learn that the games differ.
+ */
+export type OutOfSyncMessage = { readonly type: 'out-of-sync' };
+
 /** Everything the two players' browsers send each other. */
 export type Message =
-  HelloMessage | MoveMessage | RematchRequestMessage | RematchAcceptMessage | PingMessage;
+  | HelloMessage
+  | MoveMessage
+  | RematchRequestMessage
+  | RematchAcceptMessage
+  | PingMessage
+  | OutOfSyncMessage;
 
 export function helloMessage(): HelloMessage {
   return { type: 'hello', version: PROTOCOL_VERSION };
@@ -55,6 +66,7 @@ export function parseMessage(data: unknown): Message | null {
     case 'rematch-request':
     case 'rematch-accept':
     case 'ping':
+    case 'out-of-sync':
       return { type: fields.type };
     default:
       return null;

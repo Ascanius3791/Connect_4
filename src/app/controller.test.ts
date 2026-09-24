@@ -5,6 +5,8 @@ import { createGameController, DEFAULT_BOT_DELAY_MS, type Seats } from './contro
 const HUMAN_VS_HUMAN: Seats = { 1: 'human', 2: 'human' };
 const HUMAN_VS_BOT: Seats = { 1: 'human', 2: 'bot' };
 const BOT_VS_HUMAN: Seats = { 1: 'bot', 2: 'human' };
+const HUMAN_VS_REMOTE: Seats = { 1: 'human', 2: 'remote' };
+const REMOTE_VS_HUMAN: Seats = { 1: 'remote', 2: 'human' };
 
 let status: HTMLElement;
 let board: HTMLElement;
@@ -203,6 +205,70 @@ describe('createGameController', () => {
     controller.setNotice(undefined);
     vi.runAllTimers();
     expect(controller.state.history).toEqual([0]);
+  });
+
+  it('reports each clicked move with its index', () => {
+    const onHumanMove = vi.fn();
+    createGameController({ status, board }, { seats: HUMAN_VS_HUMAN, onHumanMove });
+    clickColumn(3);
+    clickColumn(3);
+    expect(onHumanMove.mock.calls).toEqual([
+      [0, 3],
+      [1, 3],
+    ]);
+  });
+
+  it('does not report illegal clicks or bot moves', () => {
+    const onHumanMove = vi.fn();
+    const controller = createGameController(
+      { status, board },
+      { seats: BOT_VS_HUMAN, random: () => 0, onHumanMove },
+    );
+    vi.runAllTimers();
+    expect(controller.state.history).toEqual([0]);
+    expect(onHumanMove).not.toHaveBeenCalled();
+
+    controller.newGame(HUMAN_VS_HUMAN);
+    for (let move = 0; move < 6; move++) clickColumn(0);
+    expect(onHumanMove).toHaveBeenCalledTimes(6);
+    clickColumn(0);
+    expect(onHumanMove).toHaveBeenCalledTimes(6);
+  });
+
+  it('waits for the remote player instead of taking clicks on their turn', () => {
+    const onHumanMove = vi.fn();
+    const controller = createGameController(
+      { status, board },
+      { seats: REMOTE_VS_HUMAN, onHumanMove },
+    );
+    expect(statusText()).toBe("Opponent's turn");
+    clickColumn(3);
+    vi.runAllTimers();
+    expect(controller.state.history).toEqual([]);
+    expect(onHumanMove).not.toHaveBeenCalled();
+
+    expect(controller.playRemoteMove(3)).toBe(true);
+    expect(statusText()).toBe('Your turn');
+    clickColumn(4);
+    expect(controller.state.history).toEqual([3, 4]);
+    expect(onHumanMove).toHaveBeenCalledWith(1, 4);
+  });
+
+  it("plays remote moves only on the remote player's turn and only if legal", () => {
+    const controller = start(HUMAN_VS_REMOTE);
+    expect(controller.playRemoteMove(3)).toBe(false);
+    clickColumn(0);
+    expect(controller.playRemoteMove(7)).toBe(false);
+    expect(controller.playRemoteMove(0)).toBe(true);
+    expect(controller.state.history).toEqual([0, 0]);
+    expect(discCount()).toBe(2);
+  });
+
+  it('disables New game in an online game', () => {
+    const controller = start(HUMAN_VS_REMOTE);
+    clickColumn(3);
+    clickNewGame();
+    expect(controller.state.history).toEqual([3]);
   });
 
   it('cancels a pending bot move when the seats change', () => {
