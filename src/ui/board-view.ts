@@ -5,9 +5,11 @@ import { playerClass } from './players';
 export interface BoardView {
   /**
    * Shows `state`: its discs, and which columns can be clicked. With
-   * `interactive` false, no column can be clicked.
+   * `interactive` false, no column can be clicked. With `outlined`, the
+   * free cell where a disc dropped into that column would land is outlined
+   * (the analysis's best move); a full column outlines nothing.
    */
-  render(state: GameState, interactive?: boolean): void;
+  render(state: GameState, interactive?: boolean, outlined?: number): void;
 }
 
 /**
@@ -47,16 +49,26 @@ export function createBoardView(
   container.replaceChildren(board);
 
   return {
-    render(state, interactive = true) {
+    render(state, interactive = true, outlined) {
+      const outlinedRow = outlined === undefined ? undefined : freeRow(state, outlined);
       buttons.forEach((button, column) => {
         button.disabled = !interactive || !canPlay(state, column);
       });
       cells.forEach((columnCells, column) => {
         columnCells.forEach((cell, row) => {
           const player = getCell(state.board, column, row);
-          cell.className = player === 0 ? 'cell' : `cell ${playerClass(player)}`;
+          const outline = column === outlined && row === outlinedRow ? ' best-move' : '';
+          cell.className = (player === 0 ? 'cell' : `cell ${playerClass(player)}`) + outline;
         });
       });
     },
   };
+}
+
+/** The lowest empty row of `column`, or undefined if it is full. */
+function freeRow(state: GameState, column: number): number | undefined {
+  for (let row = 0; row < ROWS; row++) {
+    if (getCell(state.board, column, row) === 0) return row;
+  }
+  return undefined;
 }

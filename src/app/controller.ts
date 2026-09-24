@@ -1,9 +1,10 @@
-import type { Engine } from '../bot/engine';
+import type { Engine, EngineSearchOptions, SearchAnswer } from '../bot/engine';
 import { chooseLevelMove, DEFAULT_LEVEL, LEVEL_PLAY, type Level } from '../bot/levels';
 import type { RandomSource } from '../bot/random-bot';
 import { searchMove } from '../bot/search';
 import type { Player } from '../game/board';
 import { canPlay, newGame, playMove, type GameState } from '../game/game';
+import { createAnalysisView, type AnalysisLine } from '../ui/analysis-view';
 import { createBoardView } from '../ui/board-view';
 import { createStatusView } from '../ui/status-view';
 
@@ -25,6 +26,9 @@ export const DEFAULT_BOT_DELAY_MS = 500;
  * it to a few milliseconds on the page.
  */
 export const FALLBACK_DEPTH = 8;
+
+/** How long the analysis searches each position. */
+export const ANALYSIS_OPTIONS: EngineSearchOptions = { timeLimitMs: 1000 };
 
 export interface ControllerOptions {
   readonly seats: Seats;
@@ -50,6 +54,13 @@ export interface ControllerOptions {
    * its index in the game's history. Online play sends it to the opponent.
    */
   readonly onHumanMove?: (index: number, column: number) => void;
+  /**
+   * Adds the "Analysis" button and line in `container`. While switched on,
+   * `engine` searches every position of a game without a remote player,
+   * and the board outlines its best move. Use an engine of its own, not the
+   * bot's, so the two searches never cancel or delay each other.
+   */
+  readonly analysis?: { readonly container: HTMLElement; readonly engine: Engine };
 }
 
 export interface GameController {
@@ -75,10 +86,11 @@ export interface GameController {
 }
 
 /**
- * Owns the running game: builds the status and board views in their
- * containers, applies column clicks on a human's turn, plays bot moves once
- * the engine has answered and a short pause has passed, takes remote moves
- * from outside, and re-renders after every change.
+ * Owns the running game: builds the status, board and analysis views in
+ * their containers, applies column clicks on a human's turn, plays bot
+ * moves once the engine has answered and a short pause has passed, takes
+ * remote moves from outside, analyses positions on request, and re-renders
+ * after every change.
  */
 export function createGameController(
   containers: { readonly status: HTMLElement; readonly board: HTMLElement },
@@ -90,12 +102,26 @@ export function createGameController(
   let state = newGame();
   let notice: string | undefined;
   let pendingBotMove: ReturnType<typeof setTimeout> | undefined;
+  let analysisOn = false;
+  /** The position the analysis was last asked about; undefined while none is wanted. */
+  let analysed: GameState | undefined;
+  /** Tags each analysis request, so an answer for an older one is ignored. */
+  let analysisRequest = 0;
+  /** What the analysis line shows for `analysed`; undefined when none or after a failure. */
+  let analysisLine: AnalysisLine | undefined;
+  let bestMove: number | undefined;
 
   const statusView = createStatusView(containers.status, () => restart());
   const boardView = createBoardView(containers.board, (column) => {
     if (notice !== undefined || !acceptsClicks(seats[state.currentPlayer])) return;
     if (play(column)) onHumanMove?.(state.history.length - 1, column);
   });
+  const analysisView =
+    options.analysis &&
+    createAnalysisView(options.analysis.container, () => {
+      analysisOn = !analysisOn;
+      render();
+    });
   show(state);
 
   function restart(nextSeats: Seats = seats, nextLevel: Level = level): void {
@@ -165,10 +191,55 @@ export function createGameController(
   }
 
   function render(): void {
+    updateAnalysis();
     statusView.render(state, seats, notice);
     // Disabled columns also drop their hover highlight, so the board only
     // looks clickable when a click would count.
-    boardView.render(state, notice === undefined && acceptsClicks(seats[state.currentPlayer]));
+    const interactive = notice === undefined && acceptsClicks(seats[state.currentPlayer]);
+    boardView.render(state, interactive, bestMove);
+    analysisView?.render(analysisAvailable(), analysisOn, analysisLine);
+  }
+
+  /** The analysis is offered unless a notice is shown or the game is online. */
+  function analysisAvailable(): boolean {
+    return notice === undefined && seats[1] !== 'remote' && seats[2] !== 'remote';
+  }
+
+  /**
+   * Starts analysing the current position if the analysis is on and has
+   * not been asked about it yet, or stops it when it is no longer wanted
+   * (switched off, game over, online). Called on every render, so every
+   * move, new game and mode change is analysed once.
+   */
+  function updateAnalysis(): void {
+    if (!options.analysis) return;
+    const { engine: analyser } = options.analysis;
+    const wanted =
+      analysisOn && analysisAvailable() && state.status.kind === 'playing' ? state : undefined;
+    if (wanted === analysed) return;
+    const request = ++analysisRequest;
+    analysed = wanted;
+    bestMove = undefined;
+    if (wanted === undefined) {
+      analyser.cancel();
+      analysisLine = undefined;
+      return;
+    }
+    analysisLine = 'analysing';
+    analyser.search(wanted, ANALYSIS_OPTIONS).then(
+      (answer: SearchAnswer) => {
+        if (request !== analysisRequest) return;
+        analysisLine = answer.result;
+        bestMove = answer.column;
+        render();
+      },
+      (error: unknown) => {
+        if (request !== analysisRequest) return;
+        console.error('The analysis failed.', error);
+        analysisLine = undefined;
+        render();
+      },
+    );
   }
 
   return {

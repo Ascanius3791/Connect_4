@@ -143,7 +143,28 @@ h1 {
   display: none;
 }
 
-.new-game {
+.analysis-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.analysis {
+  margin: 0;
+}
+
+.analysis-toggle[hidden] {
+  display: none;
+}
+
+.analysis-toggle[aria-pressed='true'] {
+  font-weight: 600;
+}
+
+.new-game,
+.analysis-toggle {
   padding: 0.4rem 1rem;
   font: inherit;
   cursor: pointer;
@@ -158,4 +179,11 @@ h1 {
 .cell.player-2,
 .disc.player-2 {
   background: #fdd835;
+}
+
+/* The analysis's best move: a green ring that shows on light and dark cells. */
+.cell.best-move {
+  box-shadow:
+    inset 0 0 0 calc(var(--cell) / 12) #2e7d32,
+    inset 0 0 0 calc(var(--cell) / 8) #a5d6a7;
 }

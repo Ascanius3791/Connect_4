@@ -1,6 +1,6 @@
 # Project status
 
-_Last updated: 2026-09-24, #36 (measured that each level beats the one below)._
+_Last updated: 2026-09-24, #22 (analysis: best move and expected result on request)._
 
 ## Can I play yet?
 
@@ -19,18 +19,20 @@ _Last updated: 2026-09-24, #36 (measured that each level beats the one below)._
   - **Rematch**: after a game, both of you see a "Rematch" button. When one clicks it, the other sees "Opponent wants a rematch" and an "Accept" button. Once accepted, a new game starts on both PCs, and whoever moved second last time starts (and plays red).
   - **Problems**: if your opponent closes the tab or the connection drops, the line shows "Connection lost" within about 10 seconds and the board stops taking clicks. A link to a game that no longer exists shows "Could not join this game. Ask for a new link." within about 15 seconds. If the host's own internet drops briefly while waiting, the link keeps working; if it stays down, the host sees a message to start a new online game. To play again after any of these, pick another mode, then "Play online" for a new link; no reload needed.
 
+**Analysis** (in "Two players" and "Against the computer"): click the "Analysis" button below "New game" to switch it on or off. While it is on, the computer looks at every position for about a second: a green ring marks the cell where the best move's disc would land, and the line next to the button says what it found, for example "Red wins in 2 moves", "Draw with best play" or "No forced win within the next 12 moves" (how far it looked). It never changes the computer's own moves.
+
 Changing the mode, who starts or the level begins a new game right away. "New game" starts over with the current choices; in an online game it is switched off; use "Rematch" after the game instead.
 
 ## Progress
 
-| Milestone      | Status  |
-| -------------- | ------- |
-| 1. Setup       | Done    |
-| 2. Local game  | Done    |
-| 3. Random bot  | Done    |
-| 4. Online play | Done    |
-| 5. GUI polish  | Planned |
-| 6. Bot levels  | 6 of 7  |
+| Milestone      | Status              |
+| -------------- | ------------------- |
+| 1. Setup       | Done                |
+| 2. Local game  | Done                |
+| 3. Random bot  | Done                |
+| 4. Online play | Done                |
+| 5. GUI polish  | Planned             |
+| 6. Bot levels  | 7 of 7, review next |
 
 ## What works
 
@@ -43,13 +45,12 @@ Changing the mode, who starts or the level begins a new game right away. "New ga
 - Online play between two PCs (or two tabs): a direct connection via PeerJS with no server of our own, a shareable link with a "Copy link" button, a check that both pages are the same version, and live moves. Every received move is checked; anything that does not fit ends the game as "out of sync" on both sides instead of letting the boards drift apart.
 - Online games notice a closed tab or dropped connection (the pages exchange a short signal every few seconds), give up on a link that cannot be joined, and offer a rematch in which the players take turns starting.
 - The board only reacts to the mouse (highlight, hand cursor) when it is your turn.
-- Behind the scenes: a fast internal board that can try out about 16 million positions per second, a score for how good a position looks (counting the lines of four each player can still complete, plus discs in the centre column), and a search that looks ahead as many moves as its time allows (from the start of a game, 8 moves take about 6 milliseconds, 12 moves about 0.14 seconds), finds forced wins and says what it could prove (for example "Red wins in 2 moves" or a draw). The computer opponent uses it since #34 (Medium, Hard and Expert since #35); the analysis (#22) will show what it proves.
+- Behind the scenes: a fast internal board that can try out about 16 million positions per second, a score for how good a position looks (counting the lines of four each player can still complete, plus discs in the centre column), and a search that looks ahead as many moves as its time allows (from the start of a game, 8 moves take about 6 milliseconds, 12 moves about 0.14 seconds), finds forced wins and says what it could prove (for example "Red wins in 2 moves" or a draw). The computer opponent uses it since #34 (Medium, Hard and Expert since #35).
+- An "Analysis" button that shows the best move on the board and what the search proves about the position, in its own background worker so it never slows the computer's moves.
 
 ## Next up
 
-Milestone 6 (bot levels):
-
-1. #22 Show the best move and the expected result on request
+Review of milestone 6 (bot levels): code review, fixes, play-test.
 
 Then milestone 5 (GUI polish):
 

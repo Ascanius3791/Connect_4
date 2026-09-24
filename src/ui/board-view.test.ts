@@ -75,4 +75,36 @@ describe('createBoardView', () => {
     view.render(play('3'), true);
     expect(columns().every((c) => c.disabled)).toBe(false);
   });
+
+  it('outlines the free cell where a disc in the given column lands', () => {
+    const view = createBoardView(container, () => {});
+    view.render(play('3342'), true, 3);
+    const outlined = [...container.querySelectorAll('.best-move')];
+    expect(outlined).toHaveLength(1);
+    expect(outlined[0]).toBe(columns()[3]?.querySelectorAll('.cell')[2]);
+    expect(outlined[0]?.className).toBe('cell best-move');
+
+    view.render(play('3342'), true, 0);
+    expect(container.querySelectorAll('.best-move')).toHaveLength(1);
+    expect(columns()[0]?.querySelector('.cell')?.classList.contains('best-move')).toBe(true);
+  });
+
+  it('keeps the disc colours next to the outline', () => {
+    createBoardView(container, () => {}).render(play('3342'), true, 3);
+    const cells = columns()[3]?.querySelectorAll('.cell');
+    expect(cells?.[0]?.className).toBe('cell player-1');
+    expect(cells?.[1]?.className).toBe('cell player-2');
+  });
+
+  it('removes the outline when rendered without one', () => {
+    const view = createBoardView(container, () => {});
+    view.render(newGame(), true, 3);
+    view.render(newGame(), true);
+    expect(container.querySelectorAll('.best-move')).toHaveLength(0);
+  });
+
+  it('outlines nothing in a full column', () => {
+    createBoardView(container, () => {}).render(play('000000'), true, 0);
+    expect(container.querySelectorAll('.best-move')).toHaveLength(0);
+  });
 });

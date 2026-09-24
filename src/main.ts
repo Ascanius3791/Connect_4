@@ -21,8 +21,17 @@ modeContainer.className = 'mode-bar';
 const onlineContainer = document.createElement('div');
 const statusContainer = document.createElement('div');
 statusContainer.className = 'status-bar';
+const analysisContainer = document.createElement('div');
+analysisContainer.className = 'analysis-bar';
 const boardContainer = document.createElement('div');
-app.replaceChildren(heading, modeContainer, onlineContainer, statusContainer, boardContainer);
+app.replaceChildren(
+  heading,
+  modeContainer,
+  onlineContainer,
+  statusContainer,
+  analysisContainer,
+  boardContainer,
+);
 
 /** Player 1 always moves first and plays red, so the starter takes seat 1. */
 function seatsFor(settings: ModeSettings): Seats {
@@ -49,6 +58,8 @@ const controller = createGameController(
     seats: seatsFor(initialSettings),
     level: initialSettings.level,
     engine: createWorkerEngine(),
+    // Its own worker, so the analysis never cancels or slows the bot's search.
+    analysis: { container: analysisContainer, engine: createWorkerEngine() },
     onHumanMove: (index, column) => session?.sendMove(index, column),
   },
 );

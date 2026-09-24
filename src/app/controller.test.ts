@@ -1,11 +1,16 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Engine, EngineSearchOptions } from '../bot/engine';
+import { createInProcessEngine, type Engine, type EngineSearchOptions } from '../bot/engine';
 import { LEVEL_PLAY, type Level } from '../bot/levels';
 import type { SearchResult } from '../bot/search';
 import { legalColumns } from '../game/board';
 import { canPlay, newGame, playMove, type GameState } from '../game/game';
-import { createGameController, DEFAULT_BOT_DELAY_MS, type Seats } from './controller';
+import {
+  ANALYSIS_OPTIONS,
+  createGameController,
+  DEFAULT_BOT_DELAY_MS,
+  type Seats,
+} from './controller';
 
 const HUMAN_VS_HUMAN: Seats = { 1: 'human', 2: 'human' };
 const HUMAN_VS_BOT: Seats = { 1: 'human', 2: 'bot' };
@@ -15,11 +20,13 @@ const REMOTE_VS_HUMAN: Seats = { 1: 'remote', 2: 'human' };
 
 let status: HTMLElement;
 let board: HTMLElement;
+let analysis: HTMLElement;
 
 beforeEach(() => {
   vi.useFakeTimers();
   status = document.createElement('div');
   board = document.createElement('div');
+  analysis = document.createElement('div');
 });
 
 afterEach(() => {
@@ -45,7 +52,7 @@ const UNKNOWN: SearchResult = { kind: 'unknown', depth: 1 };
 interface PendingSearch {
   readonly state: GameState;
   readonly options: EngineSearchOptions | undefined;
-  answer(column: number): Promise<void>;
+  answer(column: number, result?: SearchResult): Promise<void>;
   fail(error: Error): Promise<void>;
 }
 
@@ -63,8 +70,8 @@ function manualEngine() {
         searches.push({
           state,
           options,
-          answer: (column) => {
-            resolve({ column, result: UNKNOWN });
+          answer: (column, result = UNKNOWN) => {
+            resolve({ column, result });
             return settle();
           },
           fail: (error) => {
@@ -606,6 +613,242 @@ describe('createGameController', () => {
       controller.playRemoteMove(3);
       await vi.runAllTimersAsync();
       expect(searches).toHaveLength(0);
+    });
+  });
+
+  describe('with the analysis', () => {
+    const WIN_IN_2: SearchResult = { kind: 'win', player: 1, moves: 2, exact: true };
+
+    /** A controller with a manual engine for the bot and another for the analysis. */
+    function startAnalysis(seats: Seats, level?: Level) {
+      const bot = manualEngine();
+      const analyser = manualEngine();
+      const controller = createGameController(
+        { status, board },
+        {
+          seats,
+          level,
+          engine: bot.engine,
+          random: () => 0,
+          analysis: { container: analysis, engine: analyser.engine },
+        },
+      );
+      return { controller, bot, analyser };
+    }
+
+    function analysisButton(): HTMLButtonElement | null {
+      return analysis.querySelector<HTMLButtonElement>('.analysis-toggle');
+    }
+
+    function toggleAnalysis(): void {
+      analysisButton()?.click();
+    }
+
+    function analysisText(): string | null | undefined {
+      return analysis.querySelector('.analysis')?.textContent;
+    }
+
+    /** The column and row of every outlined cell. */
+    function outlined(): [number, number][] {
+      const result: [number, number][] = [];
+      board.querySelectorAll('.column').forEach((column, c) => {
+        column.querySelectorAll('.cell').forEach((cell, r) => {
+          if (cell.classList.contains('best-move')) result.push([c, r]);
+        });
+      });
+      return result;
+    }
+
+    it('is off by default and analyses nothing', async () => {
+      const { analyser } = startAnalysis(HUMAN_VS_HUMAN);
+      clickColumn(3);
+      await vi.runAllTimersAsync();
+      expect(analysisButton()?.getAttribute('aria-pressed')).toBe('false');
+      expect(analyser.searches).toHaveLength(0);
+      expect(analysisText()).toBe('');
+      expect(outlined()).toEqual([]);
+    });
+
+    it('analyses the current position once switched on and then shows the answer', async () => {
+      const { controller, analyser } = startAnalysis(HUMAN_VS_HUMAN);
+      clickColumn(3);
+      toggleAnalysis();
+      expect(analysisButton()?.getAttribute('aria-pressed')).toBe('true');
+      expect(analyser.searches).toHaveLength(1);
+      expect(analyser.searches[0]?.state).toBe(controller.state);
+      expect(analyser.searches[0]?.options).toEqual(ANALYSIS_OPTIONS);
+      expect(analysisText()).toBe('Analysing…');
+      expect(outlined()).toEqual([]);
+
+      await analyser.searches[0]?.answer(3, WIN_IN_2);
+      expect(analysisText()).toBe('Red wins in 2 moves');
+      expect(outlined()).toEqual([[3, 1]]);
+    });
+
+    it('analyses again after every move and New game', async () => {
+      const { controller, analyser } = startAnalysis(HUMAN_VS_HUMAN);
+      toggleAnalysis();
+      await analyser.searches[0]?.answer(3, UNKNOWN);
+      clickColumn(3);
+      expect(analyser.searches).toHaveLength(2);
+      expect(analyser.searches[1]?.state).toBe(controller.state);
+      expect(analysisText()).toBe('Analysing…');
+      expect(outlined()).toEqual([]);
+
+      clickNewGame();
+      expect(analyser.searches).toHaveLength(3);
+      expect(analyser.searches[2]?.state).toBe(controller.state);
+      controller.newGame(HUMAN_VS_BOT);
+      expect(analyser.searches).toHaveLength(4);
+      expect(analyser.searches[3]?.state).toBe(controller.state);
+    });
+
+    it('never shows the answer for an older position', async () => {
+      const { analyser } = startAnalysis(HUMAN_VS_HUMAN);
+      toggleAnalysis();
+      clickColumn(3);
+      await analyser.searches[0]?.answer(3, WIN_IN_2);
+      expect(analysisText()).toBe('Analysing…');
+      expect(outlined()).toEqual([]);
+
+      await analyser.searches[1]?.answer(4, UNKNOWN);
+      expect(analysisText()).toBe('No forced win within the next 1 move');
+      expect(outlined()).toEqual([[4, 0]]);
+    });
+
+    it('removes the outline and the line at once and stops the analysis when switched off', async () => {
+      const { analyser } = startAnalysis(HUMAN_VS_HUMAN);
+      toggleAnalysis();
+      await analyser.searches[0]?.answer(3, WIN_IN_2);
+      clickColumn(3);
+      const cancels = analyser.cancels;
+
+      toggleAnalysis();
+      expect(analysisButton()?.getAttribute('aria-pressed')).toBe('false');
+      expect(analyser.cancels).toBe(cancels + 1);
+      expect(analysisText()).toBe('');
+      expect(outlined()).toEqual([]);
+
+      await analyser.searches[1]?.answer(3, WIN_IN_2);
+      expect(analysisText()).toBe('');
+      expect(outlined()).toEqual([]);
+      clickColumn(3);
+      expect(analyser.searches).toHaveLength(2);
+    });
+
+    it('hides the outline and the line once the game is over', async () => {
+      const { analyser } = startAnalysis(HUMAN_VS_HUMAN);
+      toggleAnalysis();
+      for (const column of [0, 1, 0, 1, 0, 1]) clickColumn(column);
+      await analyser.searches[6]?.answer(0, { kind: 'win', player: 1, moves: 1, exact: true });
+      expect(outlined()).toEqual([[0, 3]]);
+
+      clickColumn(0);
+      expect(statusText()).toBe('Red wins!');
+      expect(analyser.searches).toHaveLength(7);
+      expect(analysisText()).toBe('');
+      expect(outlined()).toEqual([]);
+      expect(analysisButton()?.getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('hides the line if the analysis fails and logs the error', async () => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      try {
+        const { analyser } = startAnalysis(HUMAN_VS_HUMAN);
+        toggleAnalysis();
+        await analyser.searches[0]?.fail(new Error('worker crashed'));
+        expect(analysisText()).toBe('');
+        expect(outlined()).toEqual([]);
+        expect(error).toHaveBeenCalledOnce();
+
+        clickColumn(3);
+        expect(analyser.searches).toHaveLength(2);
+        expect(analysisText()).toBe('Analysing…');
+      } finally {
+        error.mockRestore();
+      }
+    });
+
+    it('is not offered in online games or while a notice is shown', async () => {
+      const { controller, analyser } = startAnalysis(HUMAN_VS_HUMAN);
+      toggleAnalysis();
+      await analyser.searches[0]?.answer(3, WIN_IN_2);
+
+      controller.setNotice('Waiting for your friend…');
+      expect(analysisButton()?.hidden).toBe(true);
+      expect(analysisText()).toBe('');
+      expect(outlined()).toEqual([]);
+      controller.newGame(HUMAN_VS_REMOTE);
+      controller.setNotice(undefined);
+      controller.playRemoteMove(3);
+      clickColumn(3);
+      expect(analysisButton()?.hidden).toBe(true);
+      expect(analyser.searches).toHaveLength(1);
+
+      controller.newGame(HUMAN_VS_HUMAN);
+      expect(analysisButton()?.hidden).toBe(false);
+      expect(analyser.searches).toHaveLength(2);
+      expect(analysisText()).toBe('Analysing…');
+    });
+
+    it("analyses on the computer's turn without changing the bot's move", async () => {
+      const { controller, bot, analyser } = startAnalysis(HUMAN_VS_BOT, 'hard');
+      toggleAnalysis();
+      clickColumn(3);
+      const position = controller.state;
+      expect(analyser.searches[1]?.state).toBe(position);
+      expect(bot.searches).toHaveLength(1);
+      expect(bot.searches[0]?.state).toBe(position);
+      expect(bot.searches[0]?.options).toEqual(searchOptions('hard'));
+
+      await analyser.searches[1]?.answer(4, WIN_IN_2);
+      expect(outlined()).toEqual([[4, 0]]);
+      await bot.searches[0]?.answer(2);
+      await vi.advanceTimersByTimeAsync(DEFAULT_BOT_DELAY_MS);
+      expect(controller.state.history).toEqual([3, 2]);
+      expect(analyser.searches).toHaveLength(3);
+      expect(analyser.cancels).toBe(0);
+      expect(bot.cancels).toBe(0);
+    });
+
+    describe('with the real search', () => {
+      /** The in-process search, kept shallow so the tests stay fast. */
+      function shallowEngine(): Engine {
+        const inner = createInProcessEngine();
+        return {
+          search: (state, options) => inner.search(state, { ...options, maxDepth: 4 }),
+          cancel: () => inner.cancel(),
+        };
+      }
+
+      function analyse(moves: readonly number[]) {
+        const controller = createGameController(
+          { status, board },
+          {
+            seats: HUMAN_VS_HUMAN,
+            engine: firstLegalEngine(),
+            analysis: { container: analysis, engine: shallowEngine() },
+          },
+        );
+        for (const column of moves) clickColumn(column);
+        toggleAnalysis();
+        return controller;
+      }
+
+      it('finds the win with an open three', async () => {
+        // Red on the bottom of columns 1 to 3, Yellow on top; column 4 wins.
+        analyse([0, 0, 1, 1, 2, 2]);
+        await settle();
+        expect(analysisText()).toBe('Red wins in 1 move');
+        expect(outlined()).toEqual([[3, 0]]);
+      });
+
+      it("outlines Yellow's only block", async () => {
+        analyse([0, 6, 1, 6, 2]);
+        await settle();
+        expect(outlined()).toEqual([[3, 0]]);
+        expect(analysisText()).not.toBe('Analysing…');
+      });
     });
   });
 });
