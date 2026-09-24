@@ -1,9 +1,13 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Seats } from '../app/controller';
 import { newGame, playMove, type GameState } from '../game/game';
 import { createStatusView } from './status-view';
 
 const DRAW_GAME = '231220400060316366502612332554644541451513';
+const TWO_HUMANS: Seats = { 1: 'human', 2: 'human' };
+const HUMAN_STARTS: Seats = { 1: 'human', 2: 'bot' };
+const COMPUTER_STARTS: Seats = { 1: 'bot', 2: 'human' };
 
 function play(moves: string): GameState {
   return [...moves].reduce((s, c) => playMove(s, Number(c)), newGame());
@@ -26,45 +30,79 @@ function disc(): HTMLElement | null {
 describe('createStatusView', () => {
   it("shows whose turn it is with that player's disc while playing", () => {
     const view = createStatusView(container, () => {});
-    view.render(newGame());
+    view.render(newGame(), TWO_HUMANS);
     expect(statusText()).toBe("Red's turn");
     expect(disc()?.className).toBe('disc player-1');
     expect(disc()?.hidden).toBe(false);
 
-    view.render(play('3'));
+    view.render(play('3'), TWO_HUMANS);
     expect(statusText()).toBe("Yellow's turn");
     expect(disc()?.className).toBe('disc player-2');
   });
 
   it('shows the winner after a win', () => {
     const view = createStatusView(container, () => {});
-    view.render(play('0011223'));
+    view.render(play('0011223'), TWO_HUMANS);
     expect(statusText()).toBe('Red wins!');
     expect(disc()?.className).toBe('disc player-1');
 
-    view.render(play('60011223'));
+    view.render(play('60011223'), TWO_HUMANS);
     expect(statusText()).toBe('Yellow wins!');
     expect(disc()?.className).toBe('disc player-2');
   });
 
   it('shows a draw without a disc', () => {
-    createStatusView(container, () => {}).render(play(DRAW_GAME));
+    createStatusView(container, () => {}).render(play(DRAW_GAME), TWO_HUMANS);
     expect(statusText()).toBe('Draw!');
     expect(disc()?.hidden).toBe(true);
   });
 
   it('announces the status to screen readers', () => {
-    createStatusView(container, () => {}).render(newGame());
+    createStatusView(container, () => {}).render(newGame(), TWO_HUMANS);
     expect(container.querySelector('.status')?.getAttribute('aria-live')).toBe('polite');
   });
 
   it('reports clicks on the New game button', () => {
     const onNewGame = vi.fn();
-    createStatusView(container, onNewGame).render(play('0011223'));
+    createStatusView(container, onNewGame).render(play('0011223'), TWO_HUMANS);
     const button = container.querySelector<HTMLButtonElement>('button.new-game');
     expect(button?.textContent).toBe('New game');
     expect(button?.disabled).toBe(false);
     button?.click();
     expect(onNewGame).toHaveBeenCalledOnce();
+  });
+});
+
+describe('createStatusView against the computer', () => {
+  it.each([
+    ['you start', HUMAN_STARTS, '', 'Your turn', 'player-1'],
+    ['you start', HUMAN_STARTS, '3', 'Computer is thinking…', 'player-2'],
+    ['the computer starts', COMPUTER_STARTS, '', 'Computer is thinking…', 'player-1'],
+    ['the computer starts', COMPUTER_STARTS, '3', 'Your turn', 'player-2'],
+  ])('speaks to the human while playing when %s (moves "%s")', (_, seats, moves, text, player) => {
+    createStatusView(container, () => {}).render(play(moves), seats);
+    expect(statusText()).toBe(text);
+    expect(disc()?.className).toBe(`disc ${player}`);
+  });
+
+  it.each([
+    ['you start and win', HUMAN_STARTS, '0011223', 'You win!'],
+    ['you start and lose', HUMAN_STARTS, '60011223', 'Computer wins!'],
+    ['the computer starts and wins', COMPUTER_STARTS, '0011223', 'Computer wins!'],
+    ['the computer starts and you win', COMPUTER_STARTS, '60011223', 'You win!'],
+  ])('names the winner from the human point of view when %s', (_, seats, moves, text) => {
+    createStatusView(container, () => {}).render(play(moves), seats);
+    expect(statusText()).toBe(text);
+  });
+
+  it.each([HUMAN_STARTS, COMPUTER_STARTS])('shows a draw without a disc', (seats) => {
+    createStatusView(container, () => {}).render(play(DRAW_GAME), seats);
+    expect(statusText()).toBe('Draw!');
+    expect(disc()?.hidden).toBe(true);
+  });
+
+  it('uses colour names when the computer plays both sides', () => {
+    createStatusView(container, () => {}).render(play('0011223'), { 1: 'bot', 2: 'bot' });
+    expect(statusText()).toBe('Red wins!');
   });
 });

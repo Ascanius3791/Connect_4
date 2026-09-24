@@ -26,8 +26,11 @@ export interface ControllerOptions {
 export interface GameController {
   /** The game currently shown. */
   readonly state: GameState;
-  /** Starts over with an empty board and cancels a pending bot move. */
-  newGame(): void;
+  /**
+   * Starts over with an empty board and cancels a pending bot move. Given new
+   * seats, the new game uses them; otherwise it keeps the current ones.
+   */
+  newGame(seats?: Seats): void;
 }
 
 /**
@@ -39,17 +42,19 @@ export function createGameController(
   containers: { readonly status: HTMLElement; readonly board: HTMLElement },
   options: ControllerOptions,
 ): GameController {
-  const { seats, botDelayMs = DEFAULT_BOT_DELAY_MS, random = Math.random } = options;
+  const { botDelayMs = DEFAULT_BOT_DELAY_MS, random = Math.random } = options;
+  let seats = options.seats;
   let state = newGame();
   let pendingBotMove: ReturnType<typeof setTimeout> | undefined;
 
-  const statusView = createStatusView(containers.status, restart);
+  const statusView = createStatusView(containers.status, () => restart());
   const boardView = createBoardView(containers.board, (column) => {
     if (acceptsClicks(seats[state.currentPlayer])) play(column);
   });
   show(state);
 
-  function restart(): void {
+  function restart(nextSeats: Seats = seats): void {
+    seats = nextSeats;
     clearTimeout(pendingBotMove);
     pendingBotMove = undefined;
     show(newGame());
@@ -62,7 +67,7 @@ export function createGameController(
 
   function show(next: GameState): void {
     state = next;
-    statusView.render(state);
+    statusView.render(state, seats);
     boardView.render(state);
     if (state.status.kind === 'playing' && seats[state.currentPlayer] === 'bot') {
       pendingBotMove = setTimeout(() => {

@@ -1,10 +1,15 @@
+import type { Seats } from '../app/controller';
 import type { Player } from '../game/board';
 import type { GameState } from '../game/game';
 import { PLAYER_NAMES, playerClass } from './players';
 
 export interface StatusView {
-  /** Shows whose turn it is in `state`, or how its game ended. */
-  render(state: GameState): void;
+  /**
+   * Shows whose turn it is in `state`, or how its game ended. When a human
+   * plays the computer, the texts speak to the human ("Your turn",
+   * "You win!"); otherwise they name the colours.
+   */
+  render(state: GameState, seats: Seats): void;
 }
 
 /**
@@ -30,8 +35,8 @@ export function createStatusView(container: HTMLElement, onNewGame: () => void):
   container.replaceChildren(line, button);
 
   return {
-    render(state) {
-      const { player, message } = describe(state);
+    render(state, seats) {
+      const { player, message } = describe(state, seats);
       disc.className = player ? `disc ${playerClass(player)}` : 'disc';
       disc.hidden = !player;
       text.textContent = message;
@@ -40,18 +45,29 @@ export function createStatusView(container: HTMLElement, onNewGame: () => void):
 }
 
 /** The status message and the player whose disc goes next to it, if any. */
-function describe(state: GameState): { player?: Player; message: string } {
+function describe(state: GameState, seats: Seats): { player?: Player; message: string } {
   const { status } = state;
+  const againstComputer = isAgainstComputer(seats);
   // No default branch: TypeScript reports a missing return if a new status kind is added.
   switch (status.kind) {
-    case 'playing':
-      return {
-        player: state.currentPlayer,
-        message: `${PLAYER_NAMES[state.currentPlayer]}'s turn`,
-      };
-    case 'won':
-      return { player: status.winner, message: `${PLAYER_NAMES[status.winner]} wins!` };
+    case 'playing': {
+      const player = state.currentPlayer;
+      if (!againstComputer) return { player, message: `${PLAYER_NAMES[player]}'s turn` };
+      const message = seats[player] === 'human' ? 'Your turn' : 'Computer is thinking…';
+      return { player, message };
+    }
+    case 'won': {
+      const player = status.winner;
+      if (!againstComputer) return { player, message: `${PLAYER_NAMES[player]} wins!` };
+      return { player, message: seats[player] === 'human' ? 'You win!' : 'Computer wins!' };
+    }
     case 'draw':
       return { message: 'Draw!' };
   }
+}
+
+/** True if one seat is a human and the other the computer. */
+function isAgainstComputer(seats: Seats): boolean {
+  const kinds = [seats[1], seats[2]];
+  return kinds.includes('human') && kinds.includes('bot');
 }

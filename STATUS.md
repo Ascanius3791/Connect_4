@@ -1,10 +1,15 @@
 # Project status
 
-_Last updated: 2026-09-24, after issue #15._
+_Last updated: 2026-09-24, after issue #16._
 
 ## Can I play yet?
 
-**Yes, two players on one computer.** Open https://ascanius3791.github.io/Connect_4/ and take turns clicking a column; a disc drops into the lowest free slot. Red starts, then yellow. The line above the board shows whose turn it is, then "Red wins!", "Yellow wins!" or "Draw!" when the game ends. Click "New game" at any time to start over with an empty board.
+**Yes, against a friend on the same computer or against the computer.** Open https://ascanius3791.github.io/Connect_4/ and pick a mode above the board:
+
+- **Two players** (the default): take turns clicking a column; a disc drops into the lowest free slot. Red starts, then yellow. The line above the board shows whose turn it is, then "Red wins!", "Yellow wins!" or "Draw!".
+- **Against the computer**: choose "You start" or "Computer starts"; whoever starts plays red. Click a column on your turn, and the computer answers after a short pause. It still plays random moves, so it is easy to beat. The line above the board says "Your turn", "Computer is thinking…", "You win!", "Computer wins!" or "Draw!".
+
+Changing the mode or who starts begins a new game right away. "New game" starts over with the current choices.
 
 ## Progress
 
@@ -12,7 +17,7 @@ _Last updated: 2026-09-24, after issue #15._
 | -------------- | ------- |
 | 1. Setup       | Done    |
 | 2. Local game  | Done    |
-| 3. Random bot  | Started |
+| 3. Random bot  | Done    |
 | 4. Online play | Planned |
 | 5. GUI polish  | Planned |
 | 6. Bot levels  | Planned |
@@ -21,10 +26,10 @@ _Last updated: 2026-09-24, after issue #15._
 
 - Every push is checked automatically and deployed to the website.
 - A complete local game for two players: 7 × 6 board, red and yellow discs, click a column to play.
+- Playing against a computer that picks random moves, with you or the computer starting.
 - A status line shows whose turn it is and the result; screen readers announce it.
 - "New game" restarts at any point, during or after a game.
-- The computer opponent picks a random legal move and can play its turns by itself after a short pause; choosing it as your opponent comes next (#16).
 
 ## Next up
 
-1. #16 Choose between two players and playing against the computer
+1. #17 Connect two browsers directly without our own server

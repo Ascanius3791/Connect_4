@@ -58,6 +58,23 @@ h1 {
   background: Canvas;
 }
 
+.mode-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.choice {
+  display: flex;
+  gap: 1rem;
+  margin: 0;
+}
+
+.choice[hidden] {
+  display: none;
+}
+
 .status-bar {
   display: flex;
   align-items: center;
