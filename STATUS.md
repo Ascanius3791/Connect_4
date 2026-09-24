@@ -1,6 +1,6 @@
 # Project status
 
-_Last updated: 2026-09-24, milestone 4 (online play) play-tested and closed._
+_Last updated: 2026-09-24, issues for milestone 5 (GUI polish) written: #26–#30._
 
 ## Can I play yet?
 
@@ -22,7 +22,7 @@ Changing the mode or who starts begins a new game right away. "New game" starts 
 | 2. Local game  | Done    |
 | 3. Random bot  | Done    |
 | 4. Online play | Done    |
-| 5. GUI polish  | Planned |
+| 5. GUI polish  | Next    |
 | 6. Bot levels  | Planned |
 
 ## What works
@@ -38,4 +38,8 @@ Changing the mode or who starts begins a new game right away. "New game" starts 
 
 ## Next up
 
-1. Write the issues for milestone 5 (GUI polish)
+1. #26 A consistent look in light and dark mode
+2. #27 Show which colour you play and whose turn it is
+3. #28 Falling discs and a preview of your move
+4. #29 Winning line highlight and a game-over screen
+5. #30 Remember the chosen mode across reloads
