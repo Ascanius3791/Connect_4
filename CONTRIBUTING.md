@@ -10,16 +10,17 @@ Short and imperative, describing the outcome: "Detect wins in all four direction
 
 ### Sections
 
-Every issue body has these six sections, in this order. The [issue template](.github/ISSUE_TEMPLATE/task.md) pre-fills them.
+Every issue body has these seven sections, in this order. The [issue template](.github/ISSUE_TEMPLATE/task.md) pre-fills them.
 
-| Section                 | Content                                                                                   |
-| ----------------------- | ----------------------------------------------------------------------------------------- |
-| **Goal**                | One or two sentences: what this delivers and why.                                         |
-| **Scope**               | `In:` what is part of this issue. `Out:` what is explicitly deferred, with issue links.   |
-| **Acceptance criteria** | Checkbox list of concrete, verifiable statements. The issue is done when all are checked. |
-| **Technical notes**     | Approach, files or modules involved, decisions and their reasons.                         |
-| **Testing**             | Automated tests to add and manual steps to verify the result.                             |
-| **Dependencies**        | `Blocked by #n`, or `None`.                                                               |
+| Section                 | Content                                                                                                                                                                                      |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Goal**                | One or two sentences: what this delivers and why.                                                                                                                                            |
+| **Scope**               | `In:` what is part of this issue. `Out:` what is explicitly deferred, with issue links.                                                                                                      |
+| **Acceptance criteria** | Checkbox list of concrete, verifiable statements. The contract: the issue is done when all are checked.                                                                                      |
+| **Technical notes**     | Suggested approach, files or modules involved, decisions and their reasons. Guidance, not contract: the implementation may deviate when it finds a better way, and the commit body says why. |
+| **Testing**             | Automated tests to add and manual steps to verify the result.                                                                                                                                |
+| **Dependencies**        | `Blocked by #n`, or `None`.                                                                                                                                                                  |
+| **Model**               | Recommended model and effort with a short reason, e.g. `Opus 5.5 · high: concurrency across two peers`. Options are in CLAUDE.md.                                                            |
 
 ### Size
 
@@ -55,11 +56,13 @@ Every issue belongs to one milestone. Milestones are worked on roughly in order:
 5. GUI polish
 6. Bot levels
 
+A milestone ends with a review once all its issues are closed: a code review of what the milestone added, fixes for the findings worth fixing (as issues in the same milestone), and a play-test on the deployed site. Then the milestone is closed.
+
 ## Sub-issues
 
 When an issue is too large for one commit, or its parts are independently useful, it is split using GitHub's native sub-issues:
 
-- The **parent** keeps its six sections. Its acceptance criteria describe the overall result; its Technical notes list the sub-issues.
+- The **parent** keeps its seven sections. Its acceptance criteria describe the overall result; its Technical notes list the sub-issues.
 - Each **sub-issue** is a full issue in the same format, with its own labels and the parent's milestone.
 - Sub-issues are closed by their own commits. The parent is closed once all sub-issues are closed and its acceptance criteria hold; it needs no separate commit unless integration work remains.
 - Sub-issues can themselves be split further, but keep nesting shallow.
@@ -71,7 +74,7 @@ An issue is done when:
 1. All acceptance criteria are met and checked off.
 2. The automated checks pass (typecheck, lint, format, tests, build).
 3. New behaviour is covered by tests where practical, as described in the issue's Testing section.
-4. The deployed site works after the push (once deployment exists).
+4. The deployed site works after the push (once deployment exists). Manual steps from the Testing section that Claude cannot run are handed to the user.
 5. The commit is pushed to `main` and closes the issue.
 
 ## Commits
@@ -82,7 +85,8 @@ An issue is done when:
   ```
   <Imperative summary, max ~70 characters>
 
-  <Optional body: what changed and why, if not obvious from the issue.>
+  <Optional body: what changed and why, if not obvious from the issue.
+  Required when the implementation deviates from the Technical notes.>
 
   Closes #<issue number>
   ```

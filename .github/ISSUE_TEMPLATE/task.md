@@ -21,7 +21,7 @@ Out:
 
 ## Technical notes
 
-<!-- Approach, files/modules involved, decisions and their reasons. -->
+<!-- Suggested approach, files/modules involved, decisions and their reasons. Guidance, not contract. -->
 
 ## Testing
 
@@ -30,3 +30,7 @@ Out:
 ## Dependencies
 
 <!-- "Blocked by #n" or "None". -->
+
+## Model
+
+<!-- Recommended model and effort with a short reason, e.g. "Opus 5.5 · medium: clearly specified UI change". See CLAUDE.md. -->

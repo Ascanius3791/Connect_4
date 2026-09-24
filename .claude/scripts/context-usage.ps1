@@ -5,8 +5,7 @@
 # Context size = input + cache creation + cache read tokens of the last main-session assistant turn.
 param([switch]$Hook, [switch]$StatusLine, [string]$TranscriptPath)
 
-$ContinueBelow = 60000   # below: always continue
-$CompactAbove = 120000   # above: compact if the next issue builds on this session
+$ContinueBelow = 60000   # below: may continue; above: new session
 
 function Find-Transcript {
   $projects = Join-Path $env:USERPROFILE '.claude\projects'
@@ -57,19 +56,16 @@ $k = '{0}k' -f [math]::Round($tokens / 1000)
 if ($tokens -lt $ContinueBelow) {
   $short = 'ok'
   $verdict = 'CONTINUE'
-} elseif ($tokens -lt $CompactAbove) {
-  $short = 'new session advised'
-  $verdict = 'NEW SESSION if the next issue does not build on knowledge that exists only in this session, otherwise CONTINUE'
 } else {
-  $short = 'new session / compact'
-  $verdict = 'NEW SESSION if the next issue does not build on knowledge that exists only in this session, otherwise COMPACT'
+  $short = 'new session advised'
+  $verdict = 'NEW SESSION; write knowledge the next issue needs from this session into a comment on it first'
 }
 
 if ($StatusLine) {
   "ctx $k | $short"
 } elseif ($Hook) {
   if ($tokens -lt $ContinueBelow) { exit 0 }
-  $message = "Context is $k tokens. Session check: $verdict. See CLAUDE.md step 7."
+  $message = "Context is $k tokens. Session check: $verdict. See 'Session check' in CLAUDE.md."
   @{
     systemMessage      = $message
     hookSpecificOutput = @{ hookEventName = 'PostToolUse'; additionalContext = $message }

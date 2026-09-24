@@ -1,6 +1,6 @@
 # Project status
 
-_Last updated: 2026-09-24, after issue #19._
+_Last updated: 2026-09-24, after issue #23 (workflow: each issue now names the model to use, and every milestone ends with a code review and a play-test by you)._
 
 ## Can I play yet?
 
