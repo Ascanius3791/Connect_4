@@ -1,6 +1,6 @@
 # Project status
 
-_Last updated: 2026-09-24, after issue #16._
+_Last updated: 2026-09-24, after issue #17._
 
 ## Can I play yet?
 
@@ -18,7 +18,7 @@ Changing the mode or who starts begins a new game right away. "New game" starts 
 | 1. Setup       | Done    |
 | 2. Local game  | Done    |
 | 3. Random bot  | Done    |
-| 4. Online play | Planned |
+| 4. Online play | Started |
 | 5. GUI polish  | Planned |
 | 6. Bot levels  | Planned |
 
@@ -29,7 +29,8 @@ Changing the mode or who starts begins a new game right away. "New game" starts 
 - Playing against a computer that picks random moves, with you or the computer starting.
 - A status line shows whose turn it is and the result; screen readers announce it.
 - "New game" restarts at any point, during or after a game.
+- Groundwork for online play: two browsers can open a direct connection to each other (via PeerJS, no server of our own). It is not visible in the game yet.
 
 ## Next up
 
-1. #17 Connect two browsers directly without our own server
+1. #18 Define and validate the online message protocol

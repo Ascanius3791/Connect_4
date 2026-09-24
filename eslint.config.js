@@ -12,6 +12,23 @@ export default tseslint.config(
       globals: globals.browser,
     },
   },
+  {
+    // PeerJS stays behind the Channel interface so it can be replaced later.
+    ignores: ['src/net/connection.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'peerjs',
+              message: 'Use src/net/connection.ts and the Channel interface instead.',
+            },
+          ],
+        },
+      ],
+    },
+  },
   // Must stay last: turns off rules that conflict with Prettier.
   prettier,
 );
