@@ -1,6 +1,6 @@
 # Project status
 
-_Last updated: 2026-09-24, issues written for milestone 5 (GUI polish, #26–#30) and milestone 6 (bot levels, #31–#36); milestone 6 is worked first._
+_Last updated: 2026-09-24, #31 (a fast board for the bot's search)._
 
 ## Can I play yet?
 
@@ -23,7 +23,7 @@ Changing the mode or who starts begins a new game right away. "New game" starts 
 | 3. Random bot  | Done    |
 | 4. Online play | Done    |
 | 5. GUI polish  | Planned |
-| 6. Bot levels  | Next    |
+| 6. Bot levels  | 1 of 7  |
 
 ## What works
 
@@ -35,18 +35,18 @@ Changing the mode or who starts begins a new game right away. "New game" starts 
 - Online play between two PCs (or two tabs): a direct connection via PeerJS with no server of our own, a shareable link with a "Copy link" button, a check that both pages are the same version, and live moves. Every received move is checked; anything that does not fit ends the game as "out of sync" on both sides instead of letting the boards drift apart.
 - Online games notice a closed tab or dropped connection (the pages exchange a short signal every few seconds), give up on a link that cannot be joined, and offer a rematch in which the players take turns starting.
 - The board only reacts to the mouse (highlight, hand cursor) when it is your turn.
+- Behind the scenes, for the stronger computer levels to come: a fast internal board that can try out about 16 million positions per second. Nothing changes in the game yet.
 
 ## Next up
 
 Milestone 6 (bot levels):
 
-1. #31 A fast board for the bot's search
-2. #32 Score positions
-3. #33 Search the best move within a time limit
-4. #34 Run the search in the background (Web Worker)
-5. #35 Choose the computer's level: Beginner, Easy, Medium, Hard, Expert
-6. #36 Measure that each level beats the one below
-7. #22 Show the best move and the expected result on request
+1. #32 Score positions
+2. #33 Search the best move within a time limit
+3. #34 Run the search in the background (Web Worker)
+4. #35 Choose the computer's level: Beginner, Easy, Medium, Hard, Expert
+5. #36 Measure that each level beats the one below
+6. #22 Show the best move and the expected result on request
 
 Then milestone 5 (GUI polish):
 
