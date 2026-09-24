@@ -10,6 +10,8 @@ Every push to `main` that passes all checks is deployed there automatically.
 
 ## Planned features
 
+For a short overview of where the project stands and how to play the current version, see [STATUS.md](STATUS.md).
+
 Development is tracked with [GitHub issues](https://github.com/Ascanius3791/Connect_4/issues), grouped into [milestones](https://github.com/Ascanius3791/Connect_4/milestones):
 
 1. **Setup** – project scaffold, tooling, CI and automatic deployment to GitHub Pages
