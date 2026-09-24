@@ -29,20 +29,20 @@ An issue is sized to be completed in one focused commit. If it turns out larger,
 
 Each issue gets exactly one **type** label and one or more **area** labels.
 
-| Type      | Meaning                                                    |
-| --------- | ---------------------------------------------------------- |
-| `feature` | New user-facing functionality                              |
-| `bug`     | Something is broken                                        |
-| `chore`   | Tooling, config, refactoring without behaviour change      |
-| `docs`    | Documentation only                                         |
+| Type      | Meaning                                               |
+| --------- | ----------------------------------------------------- |
+| `feature` | New user-facing functionality                         |
+| `bug`     | Something is broken                                   |
+| `chore`   | Tooling, config, refactoring without behaviour change |
+| `docs`    | Documentation only                                    |
 
-| Area          | Meaning                                  |
-| ------------- | ---------------------------------------- |
-| `game-logic`  | Rules, board state, win detection        |
-| `ui`          | Rendering, input, visuals                |
-| `bot`         | Computer opponent                        |
-| `multiplayer` | Online play between two PCs              |
-| `infra`       | Build, CI, deployment, repo setup        |
+| Area          | Meaning                           |
+| ------------- | --------------------------------- |
+| `game-logic`  | Rules, board state, win detection |
+| `ui`          | Rendering, input, visuals         |
+| `bot`         | Computer opponent                 |
+| `multiplayer` | Online play between two PCs       |
+| `infra`       | Build, CI, deployment, repo setup |
 
 ### Milestones
 

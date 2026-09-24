@@ -26,6 +26,20 @@ npm run build    # typecheck and build the production site into dist/
 npm run preview  # serve the production build locally
 ```
 
+Quality checks:
+
+```sh
+npm run check         # typecheck + lint + format check + tests (run before every commit)
+npm run typecheck     # TypeScript type check only
+npm run lint          # ESLint, zero warnings allowed
+npm run format        # format all files with Prettier
+npm run format:check  # fail if any file is not formatted
+npm test              # run tests once
+npm run test:watch    # run tests in watch mode
+```
+
+Tests live next to the code as `*.test.ts`.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the issue format, labels and the definition of done.
