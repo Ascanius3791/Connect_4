@@ -13,6 +13,13 @@ export default tseslint.config(
     },
   },
   {
+    // Command line scripts run in Node.
+    files: ['scripts/**'],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
+  {
     // PeerJS stays behind the Channel interface so it can be replaced later.
     ignores: ['src/net/connection.ts'],
     rules: {

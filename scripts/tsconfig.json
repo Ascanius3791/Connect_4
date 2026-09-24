@@ -1,0 +1,10 @@
+{
+  // The command line scripts run in Node, not the browser, so they get
+  // Node's types; they import the game and bot code from src/.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "types": ["node"]
+  },
+  "include": ["."]
+}

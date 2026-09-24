@@ -48,6 +48,12 @@ npm run test:watch    # run tests in watch mode
 
 Tests live next to the code as `*.test.ts`.
 
+Bot levels against each other (see [docs/bot-levels.md](docs/bot-levels.md) for the measured results):
+
+```sh
+npm run bot-match -- <levelA> <levelB> [games] [--seed <n>]   # e.g. hard medium 200 --seed 1
+```
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the issue format, labels and the definition of done.

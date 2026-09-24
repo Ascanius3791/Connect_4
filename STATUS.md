@@ -1,6 +1,6 @@
 # Project status
 
-_Last updated: 2026-09-24, #35 (choose the computer's level from Beginner to Expert)._
+_Last updated: 2026-09-24, #36 (measured that each level beats the one below)._
 
 ## Can I play yet?
 
@@ -30,13 +30,14 @@ Changing the mode, who starts or the level begins a new game right away. "New ga
 | 3. Random bot  | Done    |
 | 4. Online play | Done    |
 | 5. GUI polish  | Planned |
-| 6. Bot levels  | 5 of 7  |
+| 6. Bot levels  | 6 of 7  |
 
 ## What works
 
 - Every push is checked automatically and deployed to the website.
 - A complete local game for two players: 7 × 6 board, red and yellow discs, click a column to play.
 - Playing against a computer on five levels, from random moves (Beginner) to a full second of looking ahead (Expert), in the background so the page never freezes, with you or the computer starting. If the background search ever fails, the computer still moves, using a quicker search, and the error appears in the browser console.
+- The levels are measured, not guessed: in bot-against-bot matches each level scores 83% to 97% against the one below it (results in docs/bot-levels.md).
 - A status line shows whose turn it is and the result; screen readers announce it.
 - "New game" restarts at any point, during or after a game.
 - Online play between two PCs (or two tabs): a direct connection via PeerJS with no server of our own, a shareable link with a "Copy link" button, a check that both pages are the same version, and live moves. Every received move is checked; anything that does not fit ends the game as "out of sync" on both sides instead of letting the boards drift apart.
@@ -48,8 +49,7 @@ Changing the mode, who starts or the level begins a new game right away. "New ga
 
 Milestone 6 (bot levels):
 
-1. #36 Measure that each level beats the one below
-2. #22 Show the best move and the expected result on request
+1. #22 Show the best move and the expected result on request
 
 Then milestone 5 (GUI polish):
 
