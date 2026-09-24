@@ -1,6 +1,6 @@
 # Project status
 
-_Last updated: 2026-09-24, #37 (milestone 6 review: analysis counts each player's own moves)._
+_Last updated: 2026-09-24, #26 (a consistent look in light and dark mode)._
 
 ## Can I play yet?
 
@@ -31,7 +31,7 @@ Changing the mode, who starts or the level begins a new game right away. "New ga
 | 2. Local game  | Done                     |
 | 3. Random bot  | Done                     |
 | 4. Online play | Done                     |
-| 5. GUI polish  | Planned                  |
+| 5. GUI polish  | In progress              |
 | 6. Bot levels  | Reviewed, play-test next |
 
 ## What works
@@ -46,16 +46,16 @@ Changing the mode, who starts or the level begins a new game right away. "New ga
 - Online games notice a closed tab or dropped connection (the pages exchange a short signal every few seconds), give up on a link that cannot be joined, and offer a rematch in which the players take turns starting.
 - The board only reacts to the mouse (highlight, hand cursor) when it is your turn.
 - Behind the scenes: a fast internal board that can try out about 16 million positions per second, a score for how good a position looks (counting the lines of four each player can still complete, plus discs in the centre column), and a search that looks ahead as many moves as its time allows (from the start of a game, 8 moves take about 6 milliseconds, 12 moves about 0.14 seconds), finds forced wins and says what it could prove (for example "Red wins in 2 moves" or a draw). The computer opponent uses it since #34 (Medium, Hard and Expert since #35).
+- A designed look that follows your system's light or dark setting: segmented buttons for the mode, who starts and the level, one button style, a panel for the online link, a spinner while connecting and red error boxes when something goes wrong, a shaded board with rounded corners, and a Connect 4 icon in the browser tab. The whole page fits a laptop or desktop window without scrolling, with room on both sides of the board for the player cards coming next.
 - An "Analysis" button that shows the best move on the board and what the search proves about the position, in its own background worker so it never slows the computer's moves.
 
 ## Next up
 
 Your play-test of milestone 6 (bot levels) on the website; problems you find become bug issues.
 
-Then milestone 5 (GUI polish):
+Then the rest of milestone 5 (GUI polish):
 
-1. #26 A consistent look in light and dark mode
-2. #27 Show which colour you play and whose turn it is
-3. #28 Falling discs and a preview of your move
-4. #29 Winning line highlight and a game-over screen
-5. #30 Remember the chosen mode across reloads
+1. #27 Show which colour you play and whose turn it is
+2. #28 Falling discs and a preview of your move
+3. #29 Winning line highlight and a game-over screen
+4. #30 Remember the chosen mode across reloads

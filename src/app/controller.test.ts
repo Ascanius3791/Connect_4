@@ -278,7 +278,7 @@ describe('createGameController', () => {
   it('shows a notice and ignores clicks and New game until it is cleared', () => {
     const controller = start(HUMAN_VS_HUMAN);
     clickColumn(3);
-    controller.setNotice('Connected');
+    controller.setNotice({ text: 'Connected', tone: 'progress' });
     expect(statusText()).toBe('Connected');
     expect(board.querySelectorAll<HTMLButtonElement>('.column:enabled')).toHaveLength(0);
     clickColumn(4);
@@ -296,7 +296,7 @@ describe('createGameController', () => {
 
   it('does not schedule another bot move when the notice changes', async () => {
     const controller = start(BOT_VS_HUMAN);
-    controller.setNotice('Hello');
+    controller.setNotice({ text: 'Hello', tone: 'progress' });
     controller.setNotice(undefined);
     await vi.runAllTimersAsync();
     expect(controller.state.history).toEqual([0]);
@@ -774,7 +774,7 @@ describe('createGameController', () => {
       toggleAnalysis();
       await analyser.searches[0]?.answer(3, WIN_IN_2);
 
-      controller.setNotice('Waiting for your friend…');
+      controller.setNotice({ text: 'Waiting for your friend…', tone: 'progress' });
       expect(analysisButton()?.hidden).toBe(true);
       expect(analysisText()).toBe('');
       expect(outlined()).toEqual([]);

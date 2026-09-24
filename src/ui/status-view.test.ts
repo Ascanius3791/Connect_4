@@ -66,7 +66,7 @@ describe('createStatusView', () => {
 
   it('shows a notice instead of the game status and disables New game', () => {
     const view = createStatusView(container, () => {});
-    view.render(play('3'), TWO_HUMANS, 'Waiting for opponent…');
+    view.render(play('3'), TWO_HUMANS, { text: 'Waiting for opponent…', tone: 'progress' });
     expect(statusText()).toBe('Waiting for opponent…');
     expect(disc()?.hidden).toBe(true);
     expect(container.querySelector<HTMLButtonElement>('button.new-game')?.disabled).toBe(true);
@@ -76,6 +76,18 @@ describe('createStatusView', () => {
     expect(disc()?.hidden).toBe(false);
     expect(container.querySelector<HTMLButtonElement>('button.new-game')?.disabled).toBe(false);
   });
+
+  it.each(['progress', 'error'] as const)(
+    'marks a %s notice on the status line until it is cleared',
+    (tone) => {
+      const view = createStatusView(container, () => {});
+      view.render(newGame(), TWO_HUMANS, { text: 'Connection lost', tone });
+      expect(container.querySelector('.status')?.className).toBe(`status notice-${tone}`);
+
+      view.render(newGame(), TWO_HUMANS);
+      expect(container.querySelector('.status')?.className).toBe('status');
+    },
+  );
 
   it('reports clicks on the New game button', () => {
     const onNewGame = vi.fn();

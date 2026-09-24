@@ -3,16 +3,25 @@ import type { Player } from '../game/board';
 import type { GameState } from '../game/game';
 import { PLAYER_NAMES, playerClass } from './players';
 
+/** Whether a notice reports progress (shown with a spinner) or an error. */
+export type NoticeTone = 'progress' | 'error';
+
+/** A message that replaces the game's status, e.g. the state of an online connection. */
+export interface Notice {
+  readonly text: string;
+  readonly tone: NoticeTone;
+}
+
 export interface StatusView {
   /**
    * Shows whose turn it is in `state`, or how its game ended. When a human
    * plays the computer or an online opponent, the texts speak to the human
    * ("Your turn", "You win!"); otherwise they name the colours. A `notice`
-   * (e.g. the state of an online connection) replaces the game's status and
-   * disables "New game" while it is shown. "New game" is also disabled in an
+   * replaces the game's status, styled by its tone, and disables "New game"
+   * while it is shown. "New game" is also disabled in an
    * online game, where restarting alone would split the two players' games.
    */
-  render(state: GameState, seats: Seats, notice?: string): void;
+  render(state: GameState, seats: Seats, notice?: Notice): void;
 }
 
 /**
@@ -31,7 +40,7 @@ export function createStatusView(container: HTMLElement, onNewGame: () => void):
 
   const button = document.createElement('button');
   button.type = 'button';
-  button.className = 'new-game';
+  button.className = 'button new-game';
   button.textContent = 'New game';
   button.addEventListener('click', onNewGame);
 
@@ -40,7 +49,8 @@ export function createStatusView(container: HTMLElement, onNewGame: () => void):
   return {
     render(state, seats, notice) {
       const { player, message } =
-        notice === undefined ? describe(state, seats) : { player: undefined, message: notice };
+        notice === undefined ? describe(state, seats) : { player: undefined, message: notice.text };
+      line.className = notice === undefined ? 'status' : `status notice-${notice.tone}`;
       disc.className = player ? `disc ${playerClass(player)}` : 'disc';
       disc.hidden = !player;
       text.textContent = message;

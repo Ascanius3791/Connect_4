@@ -26,7 +26,7 @@ export function createAnalysisView(container: HTMLElement, onToggle: () => void)
 
   const button = document.createElement('button');
   button.type = 'button';
-  button.className = 'analysis-toggle';
+  button.className = 'button analysis-toggle';
   button.textContent = 'Analysis';
   button.setAttribute('aria-pressed', 'false');
   button.addEventListener('click', onToggle);

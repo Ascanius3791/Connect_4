@@ -1,4 +1,5 @@
 import type { OnlineStatus, RematchState } from '../app/online';
+import type { Notice } from './status-view';
 
 export interface OnlineView {
   /**
@@ -17,32 +18,40 @@ const REMATCH_TEXTS: Readonly<Record<RematchState, { text: string; button: strin
 };
 
 /**
- * The status line text for `status`, or `undefined` once connected, when the
- * line shows the game's own status instead.
+ * The status line notice for `status`, or `undefined` once connected, when
+ * the line shows the game's own status instead.
  */
-export function onlineStatusText(status: OnlineStatus): string | undefined {
+export function onlineStatusText(status: OnlineStatus): Notice | undefined {
   // No default branch: TypeScript reports a missing return if a new status kind is added.
   switch (status.kind) {
     case 'creating':
-      return 'Creating game…';
+      return progress('Creating game…');
     case 'waiting':
-      return 'Waiting for opponent…';
+      return progress('Waiting for opponent…');
     case 'connecting':
-      return 'Connecting…';
+      return progress('Connecting…');
     case 'connected':
     case 'game-over':
       return undefined;
     case 'version-mismatch':
-      return 'Your opponent is on a different version. Please both reload the page.';
+      return error('Your opponent is on a different version. Please both reload the page.');
     case 'out-of-sync':
-      return 'Game out of sync';
+      return error('Game out of sync');
     case 'connection-lost':
-      return 'Connection lost';
+      return error('Connection lost');
     case 'join-failed':
-      return 'Could not join this game. Ask for a new link.';
+      return error('Could not join this game. Ask for a new link.');
     case 'failed':
-      return status.message;
+      return error(status.message);
   }
+}
+
+function progress(text: string): Notice {
+  return { text, tone: 'progress' };
+}
+
+function error(text: string): Notice {
+  return { text, tone: 'error' };
 }
 
 /**
@@ -63,7 +72,7 @@ export function createOnlineView(container: HTMLElement, onRematch: () => void):
 
   const button = document.createElement('button');
   button.type = 'button';
-  button.className = 'copy-link';
+  button.className = 'button copy-link';
   button.textContent = 'Copy link';
   button.addEventListener('click', () => void copyLink(input, button));
 
@@ -76,7 +85,7 @@ export function createOnlineView(container: HTMLElement, onRematch: () => void):
   rematchText.setAttribute('aria-live', 'polite');
   const rematchButton = document.createElement('button');
   rematchButton.type = 'button';
-  rematchButton.className = 'rematch';
+  rematchButton.className = 'button rematch';
   rematchButton.addEventListener('click', onRematch);
   rematchBox.append(rematchText, rematchButton);
 

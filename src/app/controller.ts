@@ -6,7 +6,7 @@ import type { Player } from '../game/board';
 import { canPlay, newGame, playMove, type GameState } from '../game/game';
 import { createAnalysisView, type AnalysisLine } from '../ui/analysis-view';
 import { createBoardView } from '../ui/board-view';
-import { createStatusView } from '../ui/status-view';
+import { createStatusView, type Notice } from '../ui/status-view';
 
 /**
  * Who makes the moves for a player: someone clicking on this page, the
@@ -82,7 +82,7 @@ export interface GameController {
    * ignores column clicks and disables "New game" until it is cleared with
    * `undefined`. Survives new games.
    */
-  setNotice(notice: string | undefined): void;
+  setNotice(notice: Notice | undefined): void;
 }
 
 /**
@@ -100,7 +100,7 @@ export function createGameController(
   let seats = options.seats;
   let level = options.level ?? DEFAULT_LEVEL;
   let state = newGame();
-  let notice: string | undefined;
+  let notice: Notice | undefined;
   let pendingBotMove: ReturnType<typeof setTimeout> | undefined;
   let analysisOn = false;
   /** The position the analysis was last asked about; undefined while none is wanted. */

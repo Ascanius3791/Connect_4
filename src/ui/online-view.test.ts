@@ -146,12 +146,15 @@ describe('the rematch box', () => {
 });
 
 describe('onlineStatusText', () => {
-  it.each<[OnlineStatus, string | undefined]>([
+  it.each<[OnlineStatus, string]>([
     [{ kind: 'creating' }, 'Creating game…'],
     [WAITING, 'Waiting for opponent…'],
     [{ kind: 'connecting' }, 'Connecting…'],
-    [{ kind: 'connected' }, undefined],
-    [{ kind: 'game-over', rematch: 'offered' }, undefined],
+  ])('describes %o as progress', (status, text) => {
+    expect(onlineStatusText(status)).toEqual({ text, tone: 'progress' });
+  });
+
+  it.each<[OnlineStatus, string]>([
     [{ kind: 'connection-lost' }, 'Connection lost'],
     [{ kind: 'join-failed' }, 'Could not join this game. Ask for a new link.'],
     [
@@ -160,7 +163,14 @@ describe('onlineStatusText', () => {
     ],
     [{ kind: 'out-of-sync' }, 'Game out of sync'],
     [{ kind: 'failed', message: 'No game found' }, 'No game found'],
-  ])('describes %o', (status, text) => {
-    expect(onlineStatusText(status)).toBe(text);
+  ])('describes %o as an error', (status, text) => {
+    expect(onlineStatusText(status)).toEqual({ text, tone: 'error' });
   });
+
+  it.each<OnlineStatus>([{ kind: 'connected' }, { kind: 'game-over', rematch: 'offered' }])(
+    'gives no notice for %o',
+    (status) => {
+      expect(onlineStatusText(status)).toBeUndefined();
+    },
+  );
 });

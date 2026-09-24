@@ -14,23 +14,30 @@ import { createOnlineView, onlineStatusText } from './ui/online-view';
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Missing #app element');
 
-const heading = document.createElement('h1');
+function element(tag: string, className: string, ...children: Node[]): HTMLElement {
+  const node = document.createElement(tag);
+  node.className = className;
+  node.append(...children);
+  return node;
+}
+
+// The page is a grid (see style.css); the card slots on both sides of the
+// board stay empty until the player cards are added.
+const heading = element('h1', 'title');
 heading.textContent = 'Connect 4';
-const modeContainer = document.createElement('div');
-modeContainer.className = 'mode-bar';
-const onlineContainer = document.createElement('div');
-const statusContainer = document.createElement('div');
-statusContainer.className = 'status-bar';
-const analysisContainer = document.createElement('div');
-analysisContainer.className = 'analysis-bar';
-const boardContainer = document.createElement('div');
+const modeContainer = element('div', 'mode-bar');
+const onlineContainer = element('div', 'online-bar');
+const statusContainer = element('div', 'status-bar');
+const analysisContainer = element('div', 'analysis-bar');
+const boardContainer = element('div', 'board-area');
 app.replaceChildren(
-  heading,
-  modeContainer,
-  onlineContainer,
+  element('header', 'page-header', heading),
+  element('div', 'controls', modeContainer, onlineContainer),
   statusContainer,
   analysisContainer,
+  element('div', 'card-slot card-slot-left'),
   boardContainer,
+  element('div', 'card-slot card-slot-right'),
 );
 
 /** Player 1 always moves first and plays red, so the starter takes seat 1. */
