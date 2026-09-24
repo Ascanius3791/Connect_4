@@ -7,10 +7,14 @@ Browser Connect 4 (TypeScript + Vite, no UI framework), deployed to https://asca
 1. Read the issue: `gh issue view <n>`. Its Scope and Acceptance criteria are the contract; stay inside them.
 2. Implement, with tests as described in the issue's Testing section. Tests live next to the code as `*.test.ts`.
 3. `npm run check` must pass (typecheck, lint with zero warnings, Prettier, tests); `npm run format` fixes formatting.
-4. One commit per issue, directly on `main`, message format from CONTRIBUTING.md ending in `Closes #<n>`. Push.
+4. One commit per issue, directly on `main`, message format from CONTRIBUTING.md ending in `Closes #<n>`. Push with `git push` as its own command (not chained), so the session-check hook matches it.
 5. Watch CI: `gh run watch <id> --exit-status`. On failure, fix and push again; reopen the issue if needed.
 6. Tick the checkboxes: `.claude/scripts/tick-issue.ps1 <n>`. Close the milestone when its last issue closes.
-7. Run the `session-advisor` agent with a brief (finished issue, next issue, in-session knowledge not in the repo) and tell the user its verdict. If it says NEW SESSION or COMPACT, stop and give the user the starter prompt or `/compact` command instead of continuing.
+7. Session check. After `git push`, a hook runs `.claude/scripts/context-usage.ps1`. It is silent below 60k context tokens; above that it adds a verdict to your context. Then decide yourself whether the next issue builds on knowledge that exists only in this session (not in code, issues, commits or this file):
+   - No → stop and tell the user to start a new session with: `Work on issue #<next> of Ascanius3791/Connect_4. Follow CLAUDE.md.`
+   - Yes, and the verdict says COMPACT (above 120k) → stop and give the user a `/compact <what to keep>` command.
+   - Yes, below 120k → continue.
+     Do not spawn agents for this check; it must stay near zero cost. The status line shows the same numbers to the user.
 
 New issues follow the format, labels and milestones in CONTRIBUTING.md. Large issues are split into GitHub sub-issues.
 
