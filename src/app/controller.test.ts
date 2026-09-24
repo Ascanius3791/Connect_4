@@ -271,6 +271,23 @@ describe('createGameController', () => {
     expect(controller.state.history).toEqual([3]);
   });
 
+  it('enables the columns only on the turn of a human on this page', () => {
+    const enabled = () =>
+      [...board.querySelectorAll<HTMLButtonElement>('.column')].some((c) => !c.disabled);
+
+    const controller = start(HUMAN_VS_REMOTE);
+    expect(enabled()).toBe(true);
+    clickColumn(3);
+    expect(enabled()).toBe(false);
+    controller.playRemoteMove(4);
+    expect(enabled()).toBe(true);
+
+    controller.newGame(BOT_VS_HUMAN);
+    expect(enabled()).toBe(false);
+    vi.advanceTimersByTime(DEFAULT_BOT_DELAY_MS);
+    expect(enabled()).toBe(true);
+  });
+
   it('cancels a pending bot move when the seats change', () => {
     const controller = start(HUMAN_VS_BOT);
     clickColumn(3);

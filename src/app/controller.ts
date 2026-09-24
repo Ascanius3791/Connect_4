@@ -101,7 +101,9 @@ export function createGameController(
 
   function render(): void {
     statusView.render(state, seats, notice);
-    boardView.render(state, notice === undefined);
+    // Disabled columns also drop their hover highlight, so the board only
+    // looks clickable when a click would count.
+    boardView.render(state, notice === undefined && acceptsClicks(seats[state.currentPlayer]));
   }
 
   return {

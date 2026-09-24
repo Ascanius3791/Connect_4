@@ -1,7 +1,7 @@
 import type { Player } from '../game/board';
 import { canPlay, type GameState } from '../game/game';
 import type { Channel, JsonValue } from '../net/channel';
-import { hostConnection, joinConnection, type HostedConnection } from '../net/connection';
+import { hostConnection, joinConnection } from '../net/connection';
 import { parseMessage, PROTOCOL_VERSION, type MoveMessage } from '../net/protocol';
 import type { GameController, Seats } from './controller';
 
@@ -51,8 +51,12 @@ export type OnlineGame = Pick<GameController, 'state' | 'newGame' | 'playRemoteM
 
 /** The connection functions from `src/net/connection.ts`; tests pass fakes. */
 export interface Connector {
-  host(onGuest: (channel: Channel) => void): Promise<HostedConnection>;
-  join(id: string): Promise<Channel>;
+  host(
+    onGuest: (channel: Channel) => void,
+    onLost: (error: Error) => void,
+    signal: AbortSignal,
+  ): Promise<string>;
+  join(id: string, signal: AbortSignal): Promise<Channel>;
 }
 
 const PEER_CONNECTOR: Connector = { host: hostConnection, join: joinConnection };
@@ -68,7 +72,10 @@ export interface OnlineOptions {
    * pings keep a live connection from timing out.
    */
   readonly lostTimeoutMs?: number;
-  /** How long a guest waits for the first game to start before giving up on the link. */
+  /**
+   * How long a guest waits for the first game to start before giving up on
+   * the link. It covers the whole join; the connector has no timeout of its own.
+   */
   readonly joinTimeoutMs?: number;
 }
 
@@ -181,12 +188,15 @@ export function hostOnlineGame(
   });
   session.report({ kind: 'creating' });
   connector
-    .host((channel) => session.connect(channel))
+    .host(
+      (channel) => session.connect(channel),
+      (error) => session.fail(error),
+      session.signal,
+    )
     .then(
-      (hosted) => {
-        session.whenClosed(() => hosted.cancel());
+      (id) => {
         if (session.isWaiting) {
-          session.report({ kind: 'waiting', link: buildJoinLink(pageUrl, hosted.id) });
+          session.report({ kind: 'waiting', link: buildJoinLink(pageUrl, id) });
         }
       },
       (error: unknown) => session.fail(error),
@@ -212,7 +222,7 @@ export function joinOnlineGame(
   });
   session.report({ kind: 'connecting' });
   session.loseUnlessStartedWithin(session.timings.joinTimeoutMs);
-  connector.join(id).then(
+  connector.join(id, session.signal).then(
     (channel) => session.connect(channel),
     () => session.lose(),
   );
@@ -238,7 +248,8 @@ interface SessionSetup {
  */
 class Session implements OnlineSession {
   #phase: Phase = 'waiting';
-  #closed = false;
+  /** Aborted when the session ends; stops hosting or joining that is still under way. */
+  readonly #ended = new AbortController();
   #channel: Channel | undefined;
   /** The current game's seats; they swap with every rematch. */
   #seats: Seats;
@@ -246,7 +257,6 @@ class Session implements OnlineSession {
   #pingTimer: ReturnType<typeof setInterval> | undefined;
   #silenceTimer: ReturnType<typeof setTimeout> | undefined;
   #startTimer: ReturnType<typeof setTimeout> | undefined;
-  #cleanups: (() => void)[] = [];
   readonly #game: OnlineGame;
   readonly #onStatus: (status: OnlineStatus) => void;
   readonly #unreachable: OnlineStatus;
@@ -263,6 +273,11 @@ class Session implements OnlineSession {
     this.#onStatus = onStatus;
     this.timings = setup.timings;
     this.#unreachable = setup.unreachable;
+  }
+
+  /** Aborted once the session has ended. */
+  get signal(): AbortSignal {
+    return this.#ended.signal;
   }
 
   /** True while neither connected nor ended. */
@@ -300,6 +315,11 @@ class Session implements OnlineSession {
   connect(channel: Channel): void {
     if (!this.isWaiting) {
       channel.close();
+      return;
+    }
+    // It may have closed between opening and being handed over.
+    if (!channel.isOpen) {
+      this.lose();
       return;
     }
     this.#phase = 'handshake';
@@ -431,8 +451,8 @@ class Session implements OnlineSession {
   }
 
   /**
-   * Ends the session for good: stops the timers, reports `status` if given,
-   * and closes the connection. Does nothing once ended, so the channel
+   * Ends the session for good: stops the timers and any hosting or joining
+   * still under way, reports `status` if given, and closes the connection. Does nothing once ended, so the channel
    * closing afterwards cannot replace the reported status.
    */
   #end(status: OnlineStatus | undefined): void {
@@ -441,21 +461,12 @@ class Session implements OnlineSession {
     clearInterval(this.#pingTimer);
     clearTimeout(this.#silenceTimer);
     clearTimeout(this.#startTimer);
+    this.#ended.abort();
     if (status) this.#onStatus(status);
     this.#channel?.close();
   }
 
-  /** Runs `cleanup` on `close`, or right away if already closed. */
-  whenClosed(cleanup: () => void): void {
-    if (this.#closed) cleanup();
-    else this.#cleanups.push(cleanup);
-  }
-
   close(): void {
-    if (this.#closed) return;
-    this.#closed = true;
     this.#end(undefined);
-    for (const cleanup of this.#cleanups) cleanup();
-    this.#cleanups = [];
   }
 }

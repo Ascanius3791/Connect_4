@@ -171,23 +171,28 @@ describe('judgeRemoteMove', () => {
 /** A connector over in-memory channels, where the test decides when things happen. */
 function fakeConnector() {
   let onGuest: ((channel: Channel) => void) | undefined;
+  let onLost: ((error: Error) => void) | undefined;
+  let hostSignal: AbortSignal | undefined;
   let register: ((id: string) => void) | undefined;
   let failHost: ((error: Error) => void) | undefined;
-  const cancel = vi.fn();
   const joined: string[] = [];
+  let joinSignal: AbortSignal | undefined;
   let finishJoin: ((channel: Channel) => void) | undefined;
   let failJoin: ((error: Error) => void) | undefined;
 
   const connector: Connector = {
-    host(handler) {
-      onGuest = handler;
+    host(guestHandler, lostHandler, signal) {
+      onGuest = guestHandler;
+      onLost = lostHandler;
+      hostSignal = signal;
       return new Promise((resolve, reject) => {
-        register = (id) => resolve({ id, cancel });
+        register = resolve;
         failHost = reject;
       });
     },
-    join(id) {
+    join(id, signal) {
       joined.push(id);
+      joinSignal = signal;
       return new Promise((resolve, reject) => {
         finishJoin = resolve;
         failJoin = reject;
@@ -197,10 +202,16 @@ function fakeConnector() {
 
   return {
     connector,
-    cancel,
     joined,
+    /** Whether the session has told hosting or joining to stop. */
+    hostAborted: () => hostSignal?.aborted,
+    joinAborted: () => joinSignal?.aborted,
     register: (id: string) => register?.(id),
     failHost: (error: Error) => failHost?.(error),
+    /** The host lost the broker after registering and could not get it back. */
+    loseHost: (error: Error) => onLost?.(error),
+    /** Hands `channel` to the guest as if joining had succeeded. */
+    finishJoin: (channel: Channel) => finishJoin?.(channel),
     /** Opens a channel pair and hands one end to the host and the other to the guest. */
     connect(): [Channel, Channel] {
       const [hostEnd, guestEnd] = createChannelPair();
@@ -321,8 +332,9 @@ describe('hostOnlineGame and joinOnlineGame', () => {
     });
     fake.register('abc');
     await settle();
+    expect(fake.hostAborted()).toBe(false);
     session.close();
-    expect(fake.cancel).toHaveBeenCalledOnce();
+    expect(fake.hostAborted()).toBe(true);
 
     const [hostEnd] = fake.connect();
     await settle();
@@ -330,16 +342,68 @@ describe('hostOnlineGame and joinOnlineGame', () => {
     expect(host.statuses.map((s) => s.kind)).toEqual(['creating', 'waiting']);
   });
 
-  it('cancels hosting that finishes after closing', async () => {
+  it('ignores hosting that finishes after closing', async () => {
     const fake = fakeConnector();
     const host = page();
     hostOnlineGame(PAGES_URL, host.controller, host.onStatus, {
       connector: fake.connector,
     }).close();
+    expect(fake.hostAborted()).toBe(true);
     fake.register('abc');
     await settle();
-    expect(fake.cancel).toHaveBeenCalledOnce();
     expect(host.statuses).toEqual([{ kind: 'creating' }]);
+  });
+
+  it('reports when the host loses the server while waiting for a guest', async () => {
+    const fake = fakeConnector();
+    const host = page();
+    hostOnlineGame(PAGES_URL, host.controller, host.onStatus, { connector: fake.connector });
+    fake.register('abc');
+    await settle();
+    fake.loseHost(new Error('Lost the server'));
+    expect(host.statuses.at(-1)).toEqual({ kind: 'failed', message: 'Lost the server' });
+    expect(host.statusText()).toBe('Lost the server');
+    expect(fake.hostAborted()).toBe(true);
+  });
+
+  it('stops joining when closed', () => {
+    const fake = fakeConnector();
+    const guest = page();
+    const session = joinOnlineGame('abc', guest.controller, guest.onStatus, {
+      connector: fake.connector,
+    });
+    expect(fake.joinAborted()).toBe(false);
+    session.close();
+    expect(fake.joinAborted()).toBe(true);
+  });
+
+  it('stops joining at the join timeout', () => {
+    const fake = fakeConnector();
+    const guest = page();
+    joinOnlineGame('abc', guest.controller, guest.onStatus, {
+      connector: fake.connector,
+      joinTimeoutMs: 1_000,
+    });
+    vi.advanceTimersByTime(999);
+    expect(fake.joinAborted()).toBe(false);
+    vi.advanceTimersByTime(1);
+    expect(fake.joinAborted()).toBe(true);
+    expect(guest.statuses.at(-1)).toEqual({ kind: 'join-failed' });
+  });
+
+  it('reports a channel that closed before the guest took it over as a failed join', async () => {
+    const fake = fakeConnector();
+    const guest = page();
+    joinOnlineGame('abc', guest.controller, guest.onStatus, { connector: fake.connector });
+    const [hostEnd, guestEnd] = createChannelPair();
+    hostEnd.close();
+    await settle();
+    expect(guestEnd.isOpen).toBe(false);
+
+    fake.finishJoin(guestEnd);
+    await settle();
+    expect(guest.statuses).toEqual([{ kind: 'connecting' }, { kind: 'join-failed' }]);
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it('closes the connection on both sides when either closes', async () => {
