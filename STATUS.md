@@ -1,6 +1,6 @@
 # Project status
 
-_Last updated: 2026-09-24, after issue #14._
+_Last updated: 2026-09-24, after issue #15._
 
 ## Can I play yet?
 
@@ -23,9 +23,8 @@ _Last updated: 2026-09-24, after issue #14._
 - A complete local game for two players: 7 × 6 board, red and yellow discs, click a column to play.
 - A status line shows whose turn it is and the result; screen readers announce it.
 - "New game" restarts at any point, during or after a game.
-- The computer opponent can pick a random legal move; it cannot be played against yet.
+- The computer opponent picks a random legal move and can play its turns by itself after a short pause; choosing it as your opponent comes next (#16).
 
 ## Next up
 
-1. #15 Let the computer take its turns automatically
-2. #16 Choose between two players and playing against the computer
+1. #16 Choose between two players and playing against the computer
