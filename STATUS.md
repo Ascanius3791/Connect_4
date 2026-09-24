@@ -1,6 +1,6 @@
 # Project status
 
-_Last updated: 2026-09-24, after issue #13._
+_Last updated: 2026-09-24, after issue #7._
 
 ## Can I play yet?
 
@@ -11,7 +11,7 @@ _Last updated: 2026-09-24, after issue #13._
 | Milestone      | Status                           |
 | -------------- | -------------------------------- |
 | 1. Setup       | Done                             |
-| 2. Local game  | In progress (1 of 5 issues done) |
+| 2. Local game  | In progress (2 of 5 issues done) |
 | 3. Random bot  | Planned                          |
 | 4. Online play | Planned                          |
 | 5. GUI polish  | Planned                          |
@@ -20,11 +20,10 @@ _Last updated: 2026-09-24, after issue #13._
 ## What works
 
 - Every push is checked automatically and deployed to the website.
-- Behind the scenes: a model of the 7 × 6 board that knows where a dropped disc lands and when a column is full. Nothing of it is visible yet.
+- Behind the scenes: a model of the 7 × 6 board that knows where a dropped disc lands and when a column is full, and rules that recognise four in a row (in any direction) and a draw on a full board. Nothing of it is visible yet.
 
 ## Next up
 
-1. #7 Detect wins and draws
-2. #8 Track turns and the game result
-3. #9 Show the board and drop discs by clicking a column ← **first playable version**
-4. #10 Show whose turn it is, the result, and a "New game" button
+1. #8 Track turns and the game result
+2. #9 Show the board and drop discs by clicking a column ← **first playable version**
+3. #10 Show whose turn it is, the result, and a "New game" button
