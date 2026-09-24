@@ -1,5 +1,7 @@
 # Connect 4
 
+[![CI](https://github.com/Ascanius3791/Connect_4/actions/workflows/ci.yml/badge.svg)](https://github.com/Ascanius3791/Connect_4/actions/workflows/ci.yml)
+
 A browser-based Connect 4 game. Play against a friend on the same PC, against a bot, or live against a friend on another PC by sending them a link.
 
 ## Planned features
@@ -17,7 +19,7 @@ Mobile devices are out of scope for now.
 
 ## Development
 
-Requires [Node.js](https://nodejs.org/) 24 (LTS) or newer.
+Requires [Node.js](https://nodejs.org/) 24 (LTS) or newer. CI uses the version in `.nvmrc`.
 
 ```sh
 npm install      # install dependencies
