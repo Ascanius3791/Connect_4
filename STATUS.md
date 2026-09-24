@@ -1,6 +1,6 @@
 # Project status
 
-_Last updated: 2026-09-24, #22 (analysis: best move and expected result on request)._
+_Last updated: 2026-09-24, #37 (milestone 6 review: analysis counts each player's own moves)._
 
 ## Can I play yet?
 
@@ -19,20 +19,20 @@ _Last updated: 2026-09-24, #22 (analysis: best move and expected result on reque
   - **Rematch**: after a game, both of you see a "Rematch" button. When one clicks it, the other sees "Opponent wants a rematch" and an "Accept" button. Once accepted, a new game starts on both PCs, and whoever moved second last time starts (and plays red).
   - **Problems**: if your opponent closes the tab or the connection drops, the line shows "Connection lost" within about 10 seconds and the board stops taking clicks. A link to a game that no longer exists shows "Could not join this game. Ask for a new link." within about 15 seconds. If the host's own internet drops briefly while waiting, the link keeps working; if it stays down, the host sees a message to start a new online game. To play again after any of these, pick another mode, then "Play online" for a new link; no reload needed.
 
-**Analysis** (in "Two players" and "Against the computer"): click the "Analysis" button below "New game" to switch it on or off. While it is on, the computer looks at every position for about a second: a green ring marks the cell where the best move's disc would land, and the line next to the button says what it found, for example "Red wins in 2 moves", "Draw with best play" or "No forced win within the next 12 moves" (how far it looked). It never changes the computer's own moves.
+**Analysis** (in "Two players" and "Against the computer"): click the "Analysis" button below "New game" to switch it on or off. While it is on, the computer looks at every position for about a second: a green ring marks the cell where the best move's disc would land, and the line next to the button says what it found, for example "Red wins in 2 moves", "Draw with best play" or "No forced win within the next 6 moves" (how far it looked, counting each player's own moves). It never changes the computer's own moves.
 
 Changing the mode, who starts or the level begins a new game right away. "New game" starts over with the current choices; in an online game it is switched off; use "Rematch" after the game instead.
 
 ## Progress
 
-| Milestone      | Status              |
-| -------------- | ------------------- |
-| 1. Setup       | Done                |
-| 2. Local game  | Done                |
-| 3. Random bot  | Done                |
-| 4. Online play | Done                |
-| 5. GUI polish  | Planned             |
-| 6. Bot levels  | 7 of 7, review next |
+| Milestone      | Status                   |
+| -------------- | ------------------------ |
+| 1. Setup       | Done                     |
+| 2. Local game  | Done                     |
+| 3. Random bot  | Done                     |
+| 4. Online play | Done                     |
+| 5. GUI polish  | Planned                  |
+| 6. Bot levels  | Reviewed, play-test next |
 
 ## What works
 
@@ -50,7 +50,7 @@ Changing the mode, who starts or the level begins a new game right away. "New ga
 
 ## Next up
 
-Review of milestone 6 (bot levels): code review, fixes, play-test.
+Your play-test of milestone 6 (bot levels) on the website; problems you find become bug issues.
 
 Then milestone 5 (GUI polish):
 

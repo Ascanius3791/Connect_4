@@ -47,7 +47,7 @@ function firstLegal(state: GameState): number {
   return column;
 }
 
-const UNKNOWN: SearchResult = { kind: 'unknown', depth: 1 };
+const UNKNOWN: SearchResult = { kind: 'unknown', depth: 2 };
 
 interface PendingSearch {
   readonly state: GameState;

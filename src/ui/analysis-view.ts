@@ -46,8 +46,10 @@ export function createAnalysisView(container: HTMLElement, onToggle: () => void)
 /**
  * The analysis line for a search result. Wins count the winning player's
  * own moves including the winning disc; "at most" marks a win that is not
- * proven to be the quickest. Without a proven result, it says how many
- * moves (of either player) the search looked ahead.
+ * proven to be the quickest. Without a proven result, it says how many of
+ * each player's own moves the search looked ahead: `depth` counts single
+ * moves of either player, so neither player has a forced win within half
+ * of them.
  */
 export function describeAnalysis(result: SearchResult): string {
   // No default branch: TypeScript reports a missing return if a new result kind is added.
@@ -58,8 +60,12 @@ export function describeAnalysis(result: SearchResult): string {
     }
     case 'draw':
       return 'Draw with best play';
-    case 'unknown':
-      return `No forced win within the next ${countMoves(result.depth)}`;
+    case 'unknown': {
+      const moves = Math.floor(result.depth / 2);
+      return moves === 0
+        ? 'No forced win found yet'
+        : `No forced win within the next ${countMoves(moves)}`;
+    }
   }
 }
 

@@ -34,13 +34,17 @@ describe('describeAnalysis', () => {
     expect(describeAnalysis({ kind: 'draw' })).toBe('Draw with best play');
   });
 
-  it('says how far the search looked when nothing is proven', () => {
+  it("says how far the search looked when nothing is proven, in each player's own moves", () => {
     expect(describeAnalysis({ kind: 'unknown', depth: 12 })).toBe(
-      'No forced win within the next 12 moves',
+      'No forced win within the next 6 moves',
     );
-    expect(describeAnalysis({ kind: 'unknown', depth: 1 })).toBe(
+    expect(describeAnalysis({ kind: 'unknown', depth: 3 })).toBe(
       'No forced win within the next 1 move',
     );
+    expect(describeAnalysis({ kind: 'unknown', depth: 2 })).toBe(
+      'No forced win within the next 1 move',
+    );
+    expect(describeAnalysis({ kind: 'unknown', depth: 1 })).toBe('No forced win found yet');
   });
 });
 
