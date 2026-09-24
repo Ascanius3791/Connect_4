@@ -1,6 +1,6 @@
 # Project status
 
-_Last updated: 2026-09-24, issues for milestone 5 (GUI polish) written: #26–#30._
+_Last updated: 2026-09-24, issues written for milestone 5 (GUI polish, #26–#30) and milestone 6 (bot levels, #31–#36); milestone 6 is worked first._
 
 ## Can I play yet?
 
@@ -22,8 +22,8 @@ Changing the mode or who starts begins a new game right away. "New game" starts 
 | 2. Local game  | Done    |
 | 3. Random bot  | Done    |
 | 4. Online play | Done    |
-| 5. GUI polish  | Next    |
-| 6. Bot levels  | Planned |
+| 5. GUI polish  | Planned |
+| 6. Bot levels  | Next    |
 
 ## What works
 
@@ -37,6 +37,18 @@ Changing the mode or who starts begins a new game right away. "New game" starts 
 - The board only reacts to the mouse (highlight, hand cursor) when it is your turn.
 
 ## Next up
+
+Milestone 6 (bot levels):
+
+1. #31 A fast board for the bot's search
+2. #32 Score positions
+3. #33 Search the best move within a time limit
+4. #34 Run the search in the background (Web Worker)
+5. #35 Choose the computer's level: Beginner, Easy, Medium, Hard, Expert
+6. #36 Measure that each level beats the one below
+7. #22 Show the best move and the expected result on request
+
+Then milestone 5 (GUI polish):
 
 1. #26 A consistent look in light and dark mode
 2. #27 Show which colour you play and whose turn it is
