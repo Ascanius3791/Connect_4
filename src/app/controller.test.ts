@@ -21,12 +21,14 @@ const REMOTE_VS_HUMAN: Seats = { 1: 'remote', 2: 'human' };
 let status: HTMLElement;
 let board: HTMLElement;
 let analysis: HTMLElement;
+let players: { 1: HTMLElement; 2: HTMLElement };
 
 beforeEach(() => {
   vi.useFakeTimers();
   status = document.createElement('div');
   board = document.createElement('div');
   analysis = document.createElement('div');
+  players = { 1: document.createElement('div'), 2: document.createElement('div') };
 });
 
 afterEach(() => {
@@ -108,13 +110,13 @@ const settle = async (): Promise<void> => {
 
 /** A controller whose bot always picks the first legal column. */
 function start(seats: Seats) {
-  return createGameController({ status, board }, { seats, engine: firstLegalEngine() });
+  return createGameController({ status, players, board }, { seats, engine: firstLegalEngine() });
 }
 
 function startManual(seats: Seats, level?: Level) {
   const manual = manualEngine();
   const controller = createGameController(
-    { status, board },
+    { status, players, board },
     { seats, level, engine: manual.engine, random: () => 0 },
   );
   // Keeps the `cancels` getter live.
@@ -131,6 +133,11 @@ function clickNewGame(): void {
 
 function statusText(): string | null | undefined {
   return status.querySelector('.status')?.textContent;
+}
+
+/** The player whose card carries the turn marker, if any. */
+function turnCard(): 1 | 2 | undefined {
+  return ([1, 2] as const).find((player) => players[player].querySelector('.to-move'));
 }
 
 function discCount(): number {
@@ -229,7 +236,7 @@ describe('createGameController', () => {
 
   it('uses the delay given in the options', async () => {
     const controller = createGameController(
-      { status, board },
+      { status, players, board },
       { seats: BOT_VS_HUMAN, engine: firstLegalEngine(), botDelayMs: 50 },
     );
     await vi.advanceTimersByTimeAsync(49);
@@ -244,6 +251,17 @@ describe('createGameController', () => {
     expect(statusText()).toBe('Computer is thinking…');
     await vi.advanceTimersByTimeAsync(DEFAULT_BOT_DELAY_MS);
     expect(statusText()).toBe('Your turn');
+  });
+
+  it('moves the turn marker to the other card after a bot move', async () => {
+    start(HUMAN_VS_BOT);
+    expect(turnCard()).toBe(1);
+    clickColumn(3);
+    expect(turnCard()).toBe(2);
+    expect(players[2].textContent).toContain('Thinking…');
+    await vi.advanceTimersByTimeAsync(DEFAULT_BOT_DELAY_MS);
+    expect(turnCard()).toBe(1);
+    expect(players[1].querySelector('.player-card')?.classList.contains('yours')).toBe(true);
   });
 
   it('keeps the seats on New game', async () => {
@@ -305,7 +323,7 @@ describe('createGameController', () => {
   it('reports each clicked move with its index', () => {
     const onHumanMove = vi.fn();
     createGameController(
-      { status, board },
+      { status, players, board },
       { seats: HUMAN_VS_HUMAN, engine: firstLegalEngine(), onHumanMove },
     );
     clickColumn(3);
@@ -319,7 +337,7 @@ describe('createGameController', () => {
   it('does not report illegal clicks or bot moves', async () => {
     const onHumanMove = vi.fn();
     const controller = createGameController(
-      { status, board },
+      { status, players, board },
       { seats: BOT_VS_HUMAN, engine: firstLegalEngine(), onHumanMove },
     );
     await vi.runAllTimersAsync();
@@ -336,7 +354,7 @@ describe('createGameController', () => {
   it('waits for the remote player instead of taking clicks on their turn', async () => {
     const onHumanMove = vi.fn();
     const controller = createGameController(
-      { status, board },
+      { status, players, board },
       { seats: REMOTE_VS_HUMAN, engine: firstLegalEngine(), onHumanMove },
     );
     expect(statusText()).toBe("Opponent's turn");
@@ -624,7 +642,7 @@ describe('createGameController', () => {
       const bot = manualEngine();
       const analyser = manualEngine();
       const controller = createGameController(
-        { status, board },
+        { status, players, board },
         {
           seats,
           level,
@@ -823,7 +841,7 @@ describe('createGameController', () => {
 
       function analyse(moves: readonly number[]) {
         const controller = createGameController(
-          { status, board },
+          { status, players, board },
           {
             seats: HUMAN_VS_HUMAN,
             engine: firstLegalEngine(),

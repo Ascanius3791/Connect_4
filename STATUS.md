@@ -1,6 +1,6 @@
 # Project status
 
-_Last updated: 2026-09-24, #26 (a consistent look in light and dark mode)._
+_Last updated: 2026-09-24, #27 (player cards showing your colour and whose turn it is)._
 
 ## Can I play yet?
 
@@ -18,6 +18,8 @@ _Last updated: 2026-09-24, #26 (a consistent look in light and dark mode)._
 - **Play online**: a link appears; click "Copy link" and send it to your friend. When they open it, the game starts. You (the one who sent the link) play red and move first; your friend plays yellow. Each of you clicks on your own screen during your turn, and the move shows up on both boards right away. The line says "Your turn", "Opponent's turn", "You win!", "Opponent wins!" or "Draw!". If the two games ever disagree, both see "Game out of sync" and the connection ends.
   - **Rematch**: after a game, both of you see a "Rematch" button. When one clicks it, the other sees "Opponent wants a rematch" and an "Accept" button. Once accepted, a new game starts on both PCs, and whoever moved second last time starts (and plays red).
   - **Problems**: if your opponent closes the tab or the connection drops, the line shows "Connection lost" within about 10 seconds and the board stops taking clicks. A link to a game that no longer exists shows "Could not join this game. Ask for a new link." within about 15 seconds. If the host's own internet drops briefly while waiting, the link keeps working; if it stays down, the host sees a message to start a new online game. To play again after any of these, pick another mode, then "Play online" for a new link; no reload needed.
+
+**Player cards**: left of the board is red's card, right of it yellow's. The card of the player to move is raised, its disc glows and it says "To move" (the computer's card says "Thinking…"); the other card is faded. Against the computer and online, your own card has a thick frame in your colour and a "Your colour" badge for the whole game, even after it ends.
 
 **Analysis** (in "Two players" and "Against the computer"): click the "Analysis" button below "New game" to switch it on or off. While it is on, the computer looks at every position for about a second: a green ring marks the cell where the best move's disc would land, and the line next to the button says what it found, for example "Red wins in 2 moves", "Draw with best play" or "No forced win within the next 6 moves" (how far it looked, counting each player's own moves). It never changes the computer's own moves.
 
@@ -46,7 +48,8 @@ Changing the mode, who starts or the level begins a new game right away. "New ga
 - Online games notice a closed tab or dropped connection (the pages exchange a short signal every few seconds), give up on a link that cannot be joined, and offer a rematch in which the players take turns starting.
 - The board only reacts to the mouse (highlight, hand cursor) when it is your turn.
 - Behind the scenes: a fast internal board that can try out about 16 million positions per second, a score for how good a position looks (counting the lines of four each player can still complete, plus discs in the centre column), and a search that looks ahead as many moves as its time allows (from the start of a game, 8 moves take about 6 milliseconds, 12 moves about 0.14 seconds), finds forced wins and says what it could prove (for example "Red wins in 2 moves" or a draw). The computer opponent uses it since #34 (Medium, Hard and Expert since #35).
-- A designed look that follows your system's light or dark setting: segmented buttons for the mode, who starts and the level, one button style, a panel for the online link, a spinner while connecting and red error boxes when something goes wrong, a shaded board with rounded corners, and a Connect 4 icon in the browser tab. The whole page fits a laptop or desktop window without scrolling, with room on both sides of the board for the player cards coming next.
+- A designed look that follows your system's light or dark setting: segmented buttons for the mode, who starts and the level, one button style, a panel for the online link, a spinner while connecting and red error boxes when something goes wrong, a shaded board with rounded corners, and a Connect 4 icon in the browser tab. The whole page fits a laptop or desktop window without scrolling, with a card for each player beside the board.
+- Player cards that show at a glance which colour is yours (frame and "Your colour" badge, against the computer and online) and whose turn it is (raised card, glowing disc, "To move" or "Thinking…"). After an online rematch the mark moves to the colour you now play.
 - An "Analysis" button that shows the best move on the board and what the search proves about the position, in its own background worker so it never slows the computer's moves.
 
 ## Next up
@@ -55,7 +58,6 @@ Your play-test of milestone 6 (bot levels) on the website; problems you find bec
 
 Then the rest of milestone 5 (GUI polish):
 
-1. #27 Show which colour you play and whose turn it is
-2. #28 Falling discs and a preview of your move
-3. #29 Winning line highlight and a game-over screen
-4. #30 Remember the chosen mode across reloads
+1. #28 Falling discs and a preview of your move
+2. #29 Winning line highlight and a game-over screen
+3. #30 Remember the chosen mode across reloads

@@ -233,10 +233,11 @@ function page() {
   const online = document.createElement('div');
   const status = document.createElement('div');
   const board = document.createElement('div');
+  const players = { 1: document.createElement('div'), 2: document.createElement('div') };
   let session: OnlineSession | undefined;
   const statuses: OnlineStatus[] = [];
   const controller = createGameController(
-    { status, board },
+    { status, players, board },
     {
       seats: { 1: 'human', 2: 'human' },
       engine: createInProcessEngine(),
@@ -274,6 +275,8 @@ function page() {
       };
     },
     statusText: () => status.querySelector('.status')?.textContent,
+    /** The colour whose card carries the "You" mark, if any. */
+    yourColour: () => ([1, 2] as const).find((p) => players[p].querySelector('.yours')),
     newGameEnabled: () => !status.querySelector<HTMLButtonElement>('.new-game')?.disabled,
   };
 }
@@ -289,6 +292,7 @@ describe('hostOnlineGame and joinOnlineGame', () => {
     fake.register('abc');
     await settle();
     expect(host.statuses.at(-1)).toEqual({ kind: 'waiting', link: `${PAGES_URL}#join=abc` });
+    expect(host.yourColour()).toBeUndefined();
 
     joinOnlineGame('abc', guest.controller, guest.onStatus, { connector: fake.connector });
     expect(fake.joined).toEqual(['abc']);
@@ -479,6 +483,8 @@ describe('an online game', () => {
     const { host, guest } = await connectPages();
     expect(host.statusText()).toBe('Your turn');
     expect(guest.statusText()).toBe("Opponent's turn");
+    expect(host.yourColour()).toBe(1);
+    expect(guest.yourColour()).toBe(2);
     expect(host.newGameEnabled()).toBe(false);
     expect(guest.newGameEnabled()).toBe(false);
 
@@ -682,6 +688,8 @@ describe('a rematch', () => {
     }
     expect(guest.statusText()).toBe('Your turn');
     expect(host.statusText()).toBe("Opponent's turn");
+    expect(guest.yourColour()).toBe(1);
+    expect(host.yourColour()).toBe(2);
 
     // The guest now plays red; this time the guest wins.
     await clickMoves(guest, host, '0011223');
@@ -696,6 +704,8 @@ describe('a rematch', () => {
     await settle();
     expect(host.statusText()).toBe('Your turn');
     expect(guest.statusText()).toBe("Opponent's turn");
+    expect(host.yourColour()).toBe(1);
+    expect(guest.yourColour()).toBe(2);
     await clickMoves(host, guest, '3');
     expect(guest.controller.state.history).toEqual([3]);
   });

@@ -21,8 +21,7 @@ function element(tag: string, className: string, ...children: Node[]): HTMLEleme
   return node;
 }
 
-// The page is a grid (see style.css); the card slots on both sides of the
-// board stay empty until the player cards are added.
+// The page is a grid (see style.css) with a player card on each side of the board.
 const heading = element('h1', 'title');
 heading.textContent = 'Connect 4';
 const modeContainer = element('div', 'mode-bar');
@@ -30,14 +29,16 @@ const onlineContainer = element('div', 'online-bar');
 const statusContainer = element('div', 'status-bar');
 const analysisContainer = element('div', 'analysis-bar');
 const boardContainer = element('div', 'board-area');
+const redCardContainer = element('div', 'card-slot card-slot-left');
+const yellowCardContainer = element('div', 'card-slot card-slot-right');
 app.replaceChildren(
   element('header', 'page-header', heading),
   element('div', 'controls', modeContainer, onlineContainer),
   statusContainer,
   analysisContainer,
-  element('div', 'card-slot card-slot-left'),
+  redCardContainer,
   boardContainer,
-  element('div', 'card-slot card-slot-right'),
+  yellowCardContainer,
 );
 
 /** Player 1 always moves first and plays red, so the starter takes seat 1. */
@@ -60,7 +61,11 @@ const initialSettings: ModeSettings =
 
 let session: OnlineSession | undefined;
 const controller = createGameController(
-  { status: statusContainer, board: boardContainer },
+  {
+    status: statusContainer,
+    players: { 1: redCardContainer, 2: yellowCardContainer },
+    board: boardContainer,
+  },
   {
     seats: seatsFor(initialSettings),
     level: initialSettings.level,

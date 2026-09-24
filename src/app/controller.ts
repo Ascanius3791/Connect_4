@@ -6,6 +6,7 @@ import type { Player } from '../game/board';
 import { canPlay, newGame, playMove, type GameState } from '../game/game';
 import { createAnalysisView, type AnalysisLine } from '../ui/analysis-view';
 import { createBoardView } from '../ui/board-view';
+import { createPlayersView } from '../ui/players-view';
 import { createStatusView, type Notice } from '../ui/status-view';
 
 /**
@@ -86,14 +87,19 @@ export interface GameController {
 }
 
 /**
- * Owns the running game: builds the status, board and analysis views in
- * their containers, applies column clicks on a human's turn, plays bot
- * moves once the engine has answered and a short pause has passed, takes
+ * Owns the running game: builds the status, player card, board and
+ * analysis views in their containers, applies column clicks on a human's
+ * turn, plays bot moves once the engine has answered and a short pause has passed, takes
  * remote moves from outside, analyses positions on request, and re-renders
  * after every change.
  */
 export function createGameController(
-  containers: { readonly status: HTMLElement; readonly board: HTMLElement },
+  containers: {
+    readonly status: HTMLElement;
+    /** One slot for each player's card, red then yellow. */
+    readonly players: Readonly<Record<Player, HTMLElement>>;
+    readonly board: HTMLElement;
+  },
   options: ControllerOptions,
 ): GameController {
   const { engine, botDelayMs = DEFAULT_BOT_DELAY_MS, random = Math.random, onHumanMove } = options;
@@ -112,6 +118,7 @@ export function createGameController(
   let bestMove: number | undefined;
 
   const statusView = createStatusView(containers.status, () => restart());
+  const playersView = createPlayersView(containers.players);
   const boardView = createBoardView(containers.board, (column) => {
     if (notice !== undefined || !acceptsClicks(seats[state.currentPlayer])) return;
     if (play(column)) onHumanMove?.(state.history.length - 1, column);
@@ -193,6 +200,7 @@ export function createGameController(
   function render(): void {
     updateAnalysis();
     statusView.render(state, seats, notice);
+    playersView.render(state, seats, notice);
     // Disabled columns also drop their hover highlight, so the board only
     // looks clickable when a click would count.
     const interactive = notice === undefined && acceptsClicks(seats[state.currentPlayer]);

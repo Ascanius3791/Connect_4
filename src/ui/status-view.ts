@@ -1,7 +1,7 @@
-import type { Seat, Seats } from '../app/controller';
+import type { Seats } from '../app/controller';
 import type { Player } from '../game/board';
 import type { GameState } from '../game/game';
-import { PLAYER_NAMES, playerClass } from './players';
+import { opponentOf, PLAYER_NAMES, playerClass, type Opponent } from './players';
 
 /** Whether a notice reports progress (shown with a spinner) or an error. */
 export type NoticeTone = 'progress' | 'error';
@@ -59,8 +59,6 @@ export function createStatusView(container: HTMLElement, onNewGame: () => void):
   };
 }
 
-type Opponent = Exclude<Seat, 'human'>;
-
 /** Texts for the opponent's turn and win, by who the opponent is. */
 const OPPONENT_TEXTS: Readonly<Record<Opponent, { turn: string; wins: string }>> = {
   bot: { turn: 'Computer is thinking…', wins: 'Computer wins!' },
@@ -88,10 +86,4 @@ function describe(state: GameState, seats: Seats): { player?: Player; message: s
     case 'draw':
       return { message: 'Draw!' };
   }
-}
-
-/** The other seat if exactly one seat is a human, so the texts can speak to them. */
-function opponentOf(seats: Seats): Opponent | undefined {
-  if (seats[1] === 'human') return seats[2] === 'human' ? undefined : seats[2];
-  return seats[2] === 'human' ? seats[1] : undefined;
 }
