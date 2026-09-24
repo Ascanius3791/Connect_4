@@ -15,6 +15,17 @@ Development is tracked with [GitHub issues](https://github.com/Ascanius3791/Conn
 
 Mobile devices are out of scope for now.
 
+## Development
+
+Requires [Node.js](https://nodejs.org/) 24 (LTS) or newer.
+
+```sh
+npm install      # install dependencies
+npm run dev      # start local dev server with hot reload
+npm run build    # typecheck and build the production site into dist/
+npm run preview  # serve the production build locally
+```
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the issue format, labels and the definition of done.
