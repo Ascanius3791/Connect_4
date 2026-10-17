@@ -57,3 +57,7 @@ npm run bot-match -- <levelA> <levelB> [games] [--seed <n>]   # e.g. hard medium
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the issue format, labels and the definition of done.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
